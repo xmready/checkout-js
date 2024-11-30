@@ -51,6 +51,7 @@ import CheckoutStepType from './CheckoutStepType';
 import CheckoutSupport from './CheckoutSupport';
 import mapToCheckoutProps from './mapToCheckoutProps';
 import navigateToOrderConfirmation from './navigateToOrderConfirmation';
+import CustomerInfoSummary from '../customerinfos/CustomerInfoSummary';
 
 const Billing = lazy(() =>
     retry(
@@ -102,6 +103,41 @@ const Shipping = lazy(() =>
     ),
 );
 
+const CustomerInfos = lazy(() =>
+    retry(
+        () =>
+            import(
+                /* webpackChunkName: "customerinfo" */
+                '../customerinfos/CustomerInfos'
+            ),
+    ),
+);
+
+export interface CustomerInfoItems {
+    group_ids: [];
+    label: string;
+    metafieldKey: string;
+    options: [];
+    type: string;
+}
+
+export interface CustomerInfoData {
+    valid: boolean;
+    entityID: Number;
+}
+
+export interface CustomerInfoValues {
+    label: string;
+    value: string;
+}
+
+export interface CustomerInfoMetaFields {
+    budgeting: CustomerInfoData;
+    program_id: CustomerInfoData;
+    bottler: CustomerInfoData;
+    po_number: CustomerInfoData;
+}
+
 export interface CheckoutProps {
     checkoutId: string;
     containerId: string;
@@ -124,6 +160,14 @@ export interface CheckoutState {
     hasSelectedShippingOptions: boolean;
     isSubscribed: boolean;
     buttonConfigs: PaymentMethod[];
+    infoData: CustomerInfoItems[];
+    cusGrpParse: any;
+    infoUpdated: CustomerInfoMetaFields;
+    infoAllowed: boolean;
+    budgeting: CustomerInfoValues;
+    program_id: CustomerInfoValues;
+    bottler: CustomerInfoValues;
+    po_number: string;
 }
 
 export interface WithCheckoutProps {
@@ -166,6 +210,36 @@ class Checkout extends Component<
         hasSelectedShippingOptions: false,
         isSubscribed: false,
         buttonConfigs: [],
+        infoData: [],
+        cusGrpParse: [],
+        infoUpdated: {
+            budgeting: {
+                valid: false, entityID: 0
+            },
+            program_id: {
+                valid: false, entityID: 0
+            },
+            bottler: {
+                valid: false, entityID: 0
+            },
+            po_number: {
+                valid: false, entityID: 0
+            }
+        },
+        infoAllowed: false,
+        budgeting: {
+            "label": "",
+            "value": ""
+        },
+        program_id: {
+            "label": "",
+            "value": ""
+        },
+        bottler: {
+            "label": "",
+            "value": ""
+        },
+        po_number: ""
     };
 
     private embeddedMessenger?: EmbeddedCheckoutMessenger;
@@ -249,6 +323,7 @@ class Checkout extends Component<
 
             const consignments = data.getConsignments();
             const cart = data.getCart();
+            const customer = data.getCustomer();
 
             const hasMultiShippingEnabled =
                 data.getConfig()?.checkoutSettings.hasMultiShippingEnabled;
@@ -275,6 +350,26 @@ class Checkout extends Component<
             }
 
             window.addEventListener('beforeunload', this.handleBeforeExit);
+
+            let infoDataStr:any = localStorage.getItem("inf");
+            let infoParse:[] = JSON.parse(infoDataStr);
+            let cusGrpStr:any = localStorage.getItem("cusGrp");
+            let cusGrpParse:Number[] = JSON.parse(cusGrpStr);
+            this.setState({infoData: infoParse, cusGrpParse: cusGrpParse});
+
+            if(customer && customer.customerGroup && customer.customerGroup.id && cusGrpParse.indexOf(customer.customerGroup.id) > -1) {
+                this.setState({infoAllowed: true});
+            }
+
+            if(document.getElementById("dealerScript")) {
+                let scriptElem:any = document.getElementById("dealerScript");
+                const bearerToken:any = scriptElem.attributes.store_api.nodeValue;
+                if(bearerToken) {
+                    if(cart && cart.id) {
+                        await this.handleCustomerInfoUpdate(cart.id, bearerToken);
+                    }
+                }
+            }
 
         } catch (error) {
             if (error instanceof Error) {
@@ -365,6 +460,9 @@ class Checkout extends Component<
             case CheckoutStepType.Customer:
                 return this.renderCustomerStep(step);
 
+            case CheckoutStepType.CustomerInfo:
+                return this.renderCustomerInfoStep(step);
+
             case CheckoutStepType.Shipping:
                 return this.renderShippingStep(step);
 
@@ -419,6 +517,43 @@ class Checkout extends Component<
                     step={step}
                     viewType={customerViewType}
                 />
+            </CheckoutStep>
+        );
+    }
+
+    private renderCustomerInfoStep(step: CheckoutStepStatus): ReactNode {
+        // const { isGuestEnabled, isShowingWalletButtonsOnTop } = this.props;
+        const { infoData, infoUpdated, bottler, program_id, budgeting, po_number } = this.state;
+
+        return (
+            <CheckoutStep
+                {...step}
+                heading={<TranslatedString id="customerInfo.customerInfo_heading" />}
+                key={step.type}
+                onEdit={this.handleEditStep}
+                onExpanded={this.handleExpanded}
+                suggestion={<CheckoutSuggestion />}
+                summary={
+                    <CustomerInfoSummary
+                        po_number={po_number}
+                        bottler={bottler}
+                        program_id={program_id}
+                        budgeting={budgeting}
+                    />
+                }
+            >
+                <LazyContainer  loadingSkeleton={<AddressFormSkeleton />}>
+                    <CustomerInfos 
+                        infoData={infoData}
+                        infoUpdated={infoUpdated}
+                        bottler={bottler}
+                        program_id={program_id}
+                        budgeting={budgeting}
+                        handleInfoChange={this.handleInfoChange}
+                        handleCustomerInfoUpdate={this.handleCustomerInfoUpdate}
+                        po_number={po_number}
+                    />
+                </LazyContainer>
             </CheckoutStep>
         );
     }
@@ -678,6 +813,95 @@ class Checkout extends Component<
         }
     };
 
+    private handleInfoChange: (key: string, value:string) => void = (key, value) => {
+        const name = key;
+        this.setState({ ...this.state, [name]: value });
+    };
+
+    private handleCustomerInfoUpdate: (cartId: string,  bearerToken:any) => void = async (cartId, bearerToken) => {
+        let _that = this;
+        let getOptionsQuery = `query getCartMetafields {
+                site {
+                    cart(entityId: "${cartId}") {
+                        metafields(namespace: \"bc_storefront\") {
+                            edges {
+                                node {
+                                    entityId
+                                    id
+                                    key
+                                    value
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `;          
+        await fetch('/graphql', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${bearerToken}`
+            },
+            body: JSON.stringify({
+                query: getOptionsQuery
+            })
+        }).then(res => res.json()).then(res => {
+            if(res && res.data) {
+                let metaEdges:any = res.data.site.cart.metafields.edges;
+                let metaFieldInfo: any = {
+                    budgeting: {
+                        valid: false, entityID: 0
+                    },
+                    program_id: {
+                        valid: false, entityID: 0
+                    },
+                    bottler: {
+                        valid: false, entityID: 0
+                    },
+                    po_number: {
+                        valid: false, entityID: 0
+                    }    
+                };
+                
+                if(metaEdges && metaEdges.length) {
+                    metaEdges.map((metafield: any, index: Number) => {
+                        if (metafield.node.key == "budgeting") {
+                                _that.setState({budgeting: {"label": metafield.node.value, value: metafield.node.value}})
+                                metaFieldInfo.budgeting.valid = true;
+                                metaFieldInfo.budgeting.entityID = metafield.node.entityId;
+                        } else if (metafield.node.key == "program_id") {
+                                _that.setState({program_id: {"label": metafield.node.value, value: metafield.node.value}})
+                                metaFieldInfo.program_id.valid = true;
+                                metaFieldInfo.program_id.entityID = metafield.node.entityId;
+                        } else if (metafield.node.key == "bottler") {
+                                _that.setState({bottler: {"label": metafield.node.value, value: metafield.node.value}})
+                                metaFieldInfo.bottler.valid = true;
+                                metaFieldInfo.bottler.entityID = metafield.node.entityId;
+                        } else if (metafield.node.key == "po_number") {
+                                _that.setState({po_number: metafield.node.value})
+                                metaFieldInfo.po_number.valid = true;
+                                metaFieldInfo.po_number.entityID = metafield.node.entityId;
+                        }
+
+                        if(index == (metaEdges.length - 1)) {
+                            _that.setState({infoUpdated: metaFieldInfo});
+                        }
+                    }); 
+                }
+
+                if(metaFieldInfo.budgeting.valid == true && metaFieldInfo.program_id.valid == true && metaFieldInfo.bottler.valid == true && metaFieldInfo.po_number.valid == true) {
+                    localStorage.setItem("custInf", "1");
+                    this.navigateToStep(CheckoutStepType.Shipping);
+                } else {
+                    localStorage.removeItem("custInf");
+                    this.navigateToStep(CheckoutStepType.CustomerInfo);
+                }
+            }
+        });
+    };
+
     private handleEditStep: (type: CheckoutStepType) => void = (type) => {
         this.navigateToStep(type);
     };
@@ -718,6 +942,7 @@ class Checkout extends Component<
         }
 
         this.navigateToStep(CheckoutStepType.Customer);
+        this.setState({infoAllowed: false});
     };
 
     private handleShippingNextStep: (isBillingSameAsShipping: boolean) => void = (

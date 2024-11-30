@@ -79,6 +79,29 @@ const getCustomerStepStatus = createSelector(
     },
 );
 
+const getinfoStepStatus = createSelector(
+    ({ data }: CheckoutSelectors) => data.getCustomer(),
+    (customer) => {
+
+        let cusGrpStr:any = localStorage.getItem("cusGrp");
+        let custInf:any = localStorage.getItem("custInf");
+        let cusGrpParse:Number[] = JSON.parse(cusGrpStr);
+        let customerInfoAllowed: boolean = false;
+
+        if(customer && customer.customerGroup && customer.customerGroup.id && cusGrpParse.indexOf(customer.customerGroup.id) > -1) {
+            customerInfoAllowed = true;
+        }
+        
+        return {
+            type: CheckoutStepType.CustomerInfo,
+            isActive: false,
+            isComplete: custInf ? true : false,
+            isEditable: customerInfoAllowed,
+            isRequired: customerInfoAllowed,
+        };
+    },
+);
+
 const getBillingStepStatus = createSelector(
     ({ data }: CheckoutSelectors) => data.getCheckout(),
     ({ data }: CheckoutSelectors) => data.getBillingAddress(),
@@ -222,14 +245,15 @@ const getOrderSubmitStatus = createSelector(
 
 const getCheckoutStepStatuses = createSelector(
     getCustomerStepStatus,
+    getinfoStepStatus,
     getShippingStepStatus,
     getBillingStepStatus,
     getPaymentStepStatus,
     getOrderSubmitStatus,
-    (customerStep, shippingStep, billingStep, paymentStep, orderStatus) => {
+    (customerStep, infoStep, shippingStep, billingStep, paymentStep, orderStatus) => {
         const isSubmittingOrder = orderStatus;
 
-        const steps = compact([customerStep, shippingStep, billingStep, paymentStep]);
+        const steps = compact([customerStep, infoStep, shippingStep, billingStep, paymentStep]);
 
         const defaultActiveStep =
             steps.find((step) => !step.isComplete && step.isRequired) || steps[steps.length - 1];
