@@ -1,0 +1,1 @@
+export { CustomerInfosProps } from './CustomerInfos';
