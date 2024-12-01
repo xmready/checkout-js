@@ -74,3 +74,24 @@
 // =============================================================================
 
 @import "layouts/layouts";
+
+.customerInfo-form {
+    display: flex;
+    flex-flow: row wrap;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    align-items: flex-end;
+
+    .dynamic-form-field {
+        display: block;
+        flex: 1;
+        flex-basis: 100%;
+        margin-bottom: .75rem;
+        max-width: 100%;
+        padding: 0 .75rem;
+
+        @media (min-width: 900px) {
+            flex-basis: 50%;
+        }
+    }
+}

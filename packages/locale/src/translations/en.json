@@ -161,6 +161,11 @@
             "suggestion_text": "Looks like you have an account with {provider}. For fast checkout, continue with {providerFlow}.",
             "suggestion_action": "{providerFlow}"
         },
+        "customerInfo": {
+            "customerInfo_heading": "Customer Info",
+            "continue": "continue",
+            "error_message" : "Oops! Something went wrong!! Please try again"
+        },
         "login_email": {
             "error_server": "We couldn't send you a sign-in link. Please try again.",
             "error_not_found": "The entered email is not associated to an account. Please try with a different email.",
