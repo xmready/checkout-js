@@ -54,6 +54,7 @@ export interface CustomerInfosState {
     customerGrpId: Number;
     isLoading: boolean;
     customerInfoError: boolean;
+    poFieldDisable: boolean;
 }
 
 class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
@@ -64,6 +65,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
             customerGrpId: 0,
             isLoading: false,
             customerInfoError: false,
+            poFieldDisable: false
         };
     }
 
@@ -91,8 +93,17 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
         const {
             customerGrpId,
             isLoading,
-            customerInfoError
+            customerInfoError,
+            poFieldDisable
         } = this.state;
+
+
+        const _that = this;
+        infoData.map((infoField) => {
+            if(infoField.metafieldKey == "budgeting" && budgeting && budgeting.value == '100% BODYARMOR') {
+                _that.setState({poFieldDisable: true});
+            }
+        });
 
         return (
             <form
@@ -151,6 +162,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                 testId={`${infoField.metafieldKey}-${'text'}`}
                                                 type={'text'}
                                                 value={po_number}
+                                                additionalClassName={poFieldDisable == true ? "input_disabled" : ""}
                                                 isFloatingLabelEnabled={isFloatingLabelEnabled}
                                             />
                                             <Label
