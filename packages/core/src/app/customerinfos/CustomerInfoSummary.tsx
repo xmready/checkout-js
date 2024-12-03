@@ -25,10 +25,10 @@ const CustomerInfoSummary: FunctionComponent<CustomerInfoProps> = ({
                 className="customerView-body optimizedCheckout-contentPrimary"
                 data-test="customer-info"
             >
-                {budgeting.value && <div className='customerInfoView'>budgeting: {budgeting.value}</div>}
-                {program_id.value && <div className='customerInfoView'>program_id: {program_id.value}</div>}
-                {bottler.value && <div className='customerInfoView'>bottler: {bottler.value}</div>}
-                {po_number && <div className='customerInfoView'>po_number: {po_number}</div>}
+                {budgeting.value && <div className='customerInfoView'>Budgeting: {budgeting.value}</div>}
+                {program_id.value && <div className='customerInfoView'>Program Id: {program_id.value}</div>}
+                {bottler.value && <div className='customerInfoView'>Bottler: {bottler.value}</div>}
+                {po_number && <div className='customerInfoView'>Po Number: {po_number}</div>}
             </div>
         </div>
     );

@@ -812,9 +812,18 @@ class Checkout extends Component<
         }
     };
 
-    private handleInfoChange: (key: string, value:string) => void = (key, value) => {
+    private handleInfoChange: (key: string, value:any) => void = (key, value) => {
         const name = key;
-        this.setState({ ...this.state, [name]: value });
+        if(name == "budgeting" && value && value.value == '100% BODYARMOR') {
+            this.setState({ ...this.state, [name]: value });
+            this.setState({ po_number : "NA" });
+
+        } else if(name == "budgeting" && value && value.value != '100% BODYARMOR') {
+            this.setState({ ...this.state, [name]: value });
+            this.setState({ po_number : "" });
+        } else {
+            this.setState({ ...this.state, [name]: value });
+        }
     };
 
     private handleCustomerInfoUpdate: (cartId: string,  bearerToken:any) => void = async (cartId, bearerToken) => {
