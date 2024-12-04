@@ -63,7 +63,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
         this.state = {
             customerGrpId: 0,
             isLoading: false,
-            customerInfoError: false,
+            customerInfoError: false
         };
     }
 
@@ -151,6 +151,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                 testId={`${infoField.metafieldKey}-${'text'}`}
                                                 type={'text'}
                                                 value={po_number}
+                                                additionalClassName={(budgeting && budgeting.value == '100% BODYARMOR') ? "input_disabled" : ""}
                                                 isFloatingLabelEnabled={isFloatingLabelEnabled}
                                             />
                                             <Label

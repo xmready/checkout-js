@@ -94,4 +94,10 @@
             flex-basis: 50%;
         }
     }
+  
+    .input_disabled {
+        pointer-events: none;
+        background: #ccc;
+        cursor: not-allowed;
+    }
 }
