@@ -26,7 +26,7 @@ const CustomerInfoSummary: FunctionComponent<CustomerInfoProps> = ({
                 data-test="customer-info"
             >
                 {budgeting.value && <div className='customerInfoView'>Budgeting: {budgeting.value}</div>}
-                {program_id.value && <div className='customerInfoView'>Program Id: {program_id.value}</div>}
+                {program_id.value && <div className='customerInfoView'>Program ID: {program_id.value}</div>}
                 {bottler.value && <div className='customerInfoView'>Bottler: {bottler.value}</div>}
                 {po_number && <div className='customerInfoView'>Po Number: {po_number}</div>}
             </div>
