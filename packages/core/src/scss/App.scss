@@ -100,4 +100,10 @@
         background: #ccc;
         cursor: not-allowed;
     }
+
+    .custom-select-box {
+        .react-select__control {
+            height: 3.45rem;
+        }
+    }
 }

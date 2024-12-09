@@ -132,6 +132,8 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                     {infoField.label}
                                                                 </Label>
                                                                 <Select
+                                                                    className='custom-select-box'
+                                                                    classNamePrefix="react-select"
                                                                     id={infoField.metafieldKey}
                                                                     aria-label={infoField.label}
                                                                     name={infoField.label}
@@ -152,9 +154,14 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                 { (customId == customerGrpId) && ((infoField.metafieldKey != "assigned_program_id") || (infoField.metafieldKey == "assigned_program_id" && assigned_field_display == true)) &&
                                                     <div
                                                         key={index}
-                                                        className={`dynamic-form-field ${isFloatingLabelEnabled && 'floating-form-field'}`}
+                                                        className={`dynamic-form-field`}
                                                     >
                                                         <div className='form-field' key={index + "1"}>
+                                                            <Label
+                                                                htmlFor={infoField.metafieldKey}
+                                                            > 
+                                                                {infoField.label}
+                                                            </Label>
                                                             <TextInput
                                                                 id={infoField.metafieldKey}
                                                                 name={infoField.label}
@@ -166,12 +173,6 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                 additionalClassName={infoField.metafieldKey == "po_number" && (budgeting && budgeting.value == '100% BODYARMOR') ? "input_disabled" : ""}
                                                                 isFloatingLabelEnabled={isFloatingLabelEnabled}
                                                             />
-                                                            <Label
-                                                                htmlFor={infoField.metafieldKey}
-                                                                isFloatingLabelEnabled={isFloatingLabelEnabled}
-                                                            > 
-                                                                {infoField.label}
-                                                            </Label>
                                                         </div>
                                                     </div>
                                                 }
