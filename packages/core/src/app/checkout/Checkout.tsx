@@ -119,6 +119,7 @@ export interface CustomerInfoItems {
     metafieldKey: string;
     options: [];
     type: string;
+    placeholder: string;
 }
 
 export interface CustomerInfoData {

@@ -17,6 +17,7 @@ export interface CustomerInfoItems {
     metafieldKey: string;
     options: [];
     type: string;
+    placeholder: string;
 }
 
 export interface CustomerInfoValues {
@@ -131,14 +132,18 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                 >
                                                                     {infoField.label}
                                                                 </Label>
+                                                                {
+                                                                    ((infoField.metafieldKey == "budgeting" && budgeting.label == "") || (infoField.metafieldKey == "program_id" && program_id.label == "") || (infoField.metafieldKey == "bottler" && bottler.label == "") ||  (infoField.metafieldKey == "team_name" && team_name.label == "")) ? <div className='custom-select-placeholder'>{infoField.placeholder}</div> : ""
+                                                                }
                                                                 <Select
                                                                     className='custom-select-box'
-                                                                    classNamePrefix="react-select"
+                                                                    classNamePrefix="react-select"         
                                                                     id={infoField.metafieldKey}
                                                                     aria-label={infoField.label}
+                                                                    aria-placeholder={infoField.placeholder}
                                                                     name={infoField.label}
                                                                     options={infoField.options}
-                                                                    value={infoField.metafieldKey == "budgeting" ? budgeting : (infoField.metafieldKey == "program_id" ? program_id : infoField.metafieldKey == "bottler" ? bottler : infoField.metafieldKey == "assigned_program_id" ? assigned_program_id : team_name)}
+                                                                    value={infoField.metafieldKey == "budgeting" ? budgeting : (infoField.metafieldKey == "program_id" ? program_id : infoField.metafieldKey == "bottler" ? bottler : team_name)}
                                                                     onChange={(value) => (handleInfoChange(infoField.metafieldKey , value))}
                                                                 />
                                                             </div>
@@ -166,7 +171,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                 id={infoField.metafieldKey}
                                                                 name={infoField.label}
                                                                 onChange={(event) => (handleInfoChange(infoField.metafieldKey , event.target.value))}
-                                                                placeholder={infoField.label}
+                                                                placeholder={infoField.placeholder ? infoField.placeholder : infoField.label}
                                                                 testId={`${infoField.metafieldKey}-${'text'}`}
                                                                 type={'text'}
                                                                 value={infoField.metafieldKey == "po_number" ? po_number : assigned_program_id}

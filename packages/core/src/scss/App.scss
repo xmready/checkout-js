@@ -106,4 +106,16 @@
             height: 3.45rem;
         }
     }
+
+    .custom-select-placeholder {
+        position: absolute;
+        top: 52%;
+        left: 10px;
+        z-index: 1;
+        color: #888888;
+    }
+
+    .react-select__menu {
+        z-index: 2;
+    }
 }
