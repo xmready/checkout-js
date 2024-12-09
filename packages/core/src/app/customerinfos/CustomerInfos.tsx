@@ -132,9 +132,6 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                 >
                                                                     {infoField.label}
                                                                 </Label>
-                                                                {
-                                                                    ((infoField.metafieldKey == "budgeting" && budgeting.label == "") || (infoField.metafieldKey == "program_id" && program_id.label == "") || (infoField.metafieldKey == "bottler" && bottler.label == "") ||  (infoField.metafieldKey == "team_name" && team_name.label == "")) ? <div className='custom-select-placeholder'>{infoField.placeholder}</div> : ""
-                                                                }
                                                                 <Select
                                                                     className='custom-select-box'
                                                                     classNamePrefix="react-select"         
@@ -143,7 +140,8 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                     aria-placeholder={infoField.placeholder}
                                                                     name={infoField.label}
                                                                     options={infoField.options}
-                                                                    value={infoField.metafieldKey == "budgeting" ? budgeting : (infoField.metafieldKey == "program_id" ? program_id : infoField.metafieldKey == "bottler" ? bottler : team_name)}
+                                                                    placeholder={infoField.placeholder}
+                                                                    value={infoField.metafieldKey == "budgeting" ? budgeting.label != "" ? budgeting: infoField.placeholder : (infoField.metafieldKey == "program_id" ? program_id.label != "" ? program_id: infoField.placeholder : infoField.metafieldKey == "bottler" ? bottler.label != "" ? bottler: infoField.placeholder : team_name.label != "" ? team_name: infoField.placeholder)}
                                                                     onChange={(value) => (handleInfoChange(infoField.metafieldKey , value))}
                                                                 />
                                                             </div>
