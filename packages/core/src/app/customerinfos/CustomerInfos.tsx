@@ -242,7 +242,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                         if(infoUpdated?.team_name.valid == false && team_name) {
                             team_nameData = await this.createMetaFieldsGraphQL(cartID, "team_name", team_name, bearerToken);
                         } else {
-                            team_nameData = await this.updateMetaFieldsGraphQL(cartID, infoUpdated?.budgeting.entityID, "team_name", team_name, bearerToken);
+                            team_nameData = await this.updateMetaFieldsGraphQL(cartID, infoUpdated?.team_name.entityID, "team_name", team_name, bearerToken);
                         }
 
                         if(infoUpdated?.assigned_program_id.entityID != 0) {
