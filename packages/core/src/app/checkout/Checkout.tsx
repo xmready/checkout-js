@@ -119,6 +119,7 @@ export interface CustomerInfoItems {
     metafieldKey: string;
     options: [];
     type: string;
+    placeholder: string;
 }
 
 export interface CustomerInfoData {
@@ -771,8 +772,31 @@ class Checkout extends Component<
         return embeddedSupport.isSupported(...methodIds);
     };
 
-    private handleAfterSignInAfter: () => void = () => {
+    private handleAfterSignInAfter: () => void = async () => {
+        const {loadCheckout, checkoutId, extensionService} = this.props;
+
+        try {
+            const [{ data }] = await Promise.all([loadCheckout(checkoutId, {
+                params: {
+                    include: [
+                        'cart.lineItems.physicalItems.categoryNames',
+                        'cart.lineItems.digitalItems.categoryNames',
+                    ] as any, // FIXME: Currently the enum is not exported so it can't be used here.
+                },
+            }), extensionService.loadExtensions()]);
+
+            const customer = data.getCustomer();
+
+            if(customer && customer.customerGroup && customer.customerGroup.id) {
+                this.setState({customerGroupId: customer.customerGroup.id})
+            }
+
         this.navigateToStep(CheckoutStepType.CustomerInfo);
+        } catch (error) {
+            if (error instanceof Error) {
+                this.handleUnhandledError(error);
+            }
+        }
     }
     private handleCartChangedError: (error: CartChangedError) => void = () => {
         this.navigateToStep(CheckoutStepType.Shipping);
