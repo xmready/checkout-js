@@ -17,6 +17,7 @@ export interface CustomerInfoItems {
     metafieldKey: string;
     options: [];
     type: string;
+    placeholder: string;
 }
 
 export interface CustomerInfoValues {
@@ -132,11 +133,15 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                     {infoField.label}
                                                                 </Label>
                                                                 <Select
+                                                                    className='custom-select-box'
+                                                                    classNamePrefix="react-select"         
                                                                     id={infoField.metafieldKey}
                                                                     aria-label={infoField.label}
+                                                                    aria-placeholder={infoField.placeholder}
                                                                     name={infoField.label}
                                                                     options={infoField.options}
-                                                                    value={infoField.metafieldKey == "budgeting" ? budgeting : (infoField.metafieldKey == "program_id" ? program_id : infoField.metafieldKey == "bottler" ? bottler : infoField.metafieldKey == "assigned_program_id" ? assigned_program_id : team_name)}
+                                                                    placeholder={infoField.placeholder}
+                                                                    value={infoField.metafieldKey == "budgeting" ? budgeting.label != "" ? budgeting: infoField.placeholder : (infoField.metafieldKey == "program_id" ? program_id.label != "" ? program_id: infoField.placeholder : infoField.metafieldKey == "bottler" ? bottler.label != "" ? bottler: infoField.placeholder : team_name.label != "" ? team_name: infoField.placeholder)}
                                                                     onChange={(value) => (handleInfoChange(infoField.metafieldKey , value))}
                                                                 />
                                                             </div>
@@ -152,26 +157,25 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                 { (customId == customerGrpId) && ((infoField.metafieldKey != "assigned_program_id") || (infoField.metafieldKey == "assigned_program_id" && assigned_field_display == true)) &&
                                                     <div
                                                         key={index}
-                                                        className={`dynamic-form-field ${isFloatingLabelEnabled && 'floating-form-field'}`}
+                                                        className={`dynamic-form-field`}
                                                     >
                                                         <div className='form-field' key={index + "1"}>
+                                                            <Label
+                                                                htmlFor={infoField.metafieldKey}
+                                                            > 
+                                                                {infoField.label}
+                                                            </Label>
                                                             <TextInput
                                                                 id={infoField.metafieldKey}
                                                                 name={infoField.label}
                                                                 onChange={(event) => (handleInfoChange(infoField.metafieldKey , event.target.value))}
-                                                                placeholder={infoField.label}
+                                                                placeholder={infoField.placeholder ? infoField.placeholder : infoField.label}
                                                                 testId={`${infoField.metafieldKey}-${'text'}`}
                                                                 type={'text'}
                                                                 value={infoField.metafieldKey == "po_number" ? po_number : assigned_program_id}
                                                                 additionalClassName={infoField.metafieldKey == "po_number" && (budgeting && budgeting.value == '100% BODYARMOR') ? "input_disabled" : ""}
                                                                 isFloatingLabelEnabled={isFloatingLabelEnabled}
                                                             />
-                                                            <Label
-                                                                htmlFor={infoField.metafieldKey}
-                                                                isFloatingLabelEnabled={isFloatingLabelEnabled}
-                                                            > 
-                                                                {infoField.label}
-                                                            </Label>
                                                         </div>
                                                     </div>
                                                 }
@@ -238,7 +242,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                         if(infoUpdated?.team_name.valid == false && team_name) {
                             team_nameData = await this.createMetaFieldsGraphQL(cartID, "team_name", team_name, bearerToken);
                         } else {
-                            team_nameData = await this.updateMetaFieldsGraphQL(cartID, infoUpdated?.budgeting.entityID, "team_name", team_name, bearerToken);
+                            team_nameData = await this.updateMetaFieldsGraphQL(cartID, infoUpdated?.team_name.entityID, "team_name", team_name, bearerToken);
                         }
 
                         if(infoUpdated?.assigned_program_id.entityID != 0) {
