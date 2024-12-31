@@ -774,7 +774,7 @@ class Checkout extends Component<
 
     private handleAfterSignInAfter: () => void = async () => {
         const {loadCheckout, checkoutId, extensionService} = this.props;
-
+        const { cusGrpParse } = this.state;
         try {
             const [{ data }] = await Promise.all([loadCheckout(checkoutId, {
                 params: {
@@ -790,8 +790,12 @@ class Checkout extends Component<
             if(customer && customer.customerGroup && customer.customerGroup.id) {
                 this.setState({customerGroupId: customer.customerGroup.id})
             }
-
-        this.navigateToStep(CheckoutStepType.CustomerInfo);
+            
+            if(customer && customer.customerGroup && customer.customerGroup.id && cusGrpParse && cusGrpParse.indexOf(customer.customerGroup.id) > -1) {
+                this.navigateToStep(CheckoutStepType.CustomerInfo);
+            } else {
+                this.navigateToStep(CheckoutStepType.Shipping);
+            }
         } catch (error) {
             if (error instanceof Error) {
                 this.handleUnhandledError(error);

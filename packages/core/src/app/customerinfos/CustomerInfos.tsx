@@ -8,7 +8,6 @@ import TextInput from '../ui/form/TextInput';
 import { CheckoutContextProps } from '@bigcommerce/checkout/payment-integration-api';
 import { withCheckout } from '../checkout';
 import { Alert, AlertType } from '../ui/alert';
-import { isFloatingLabelEnabled } from '../common/utility';
 import Label from '../ui/form/Label';
 
 export interface CustomerInfoItems {
@@ -52,7 +51,6 @@ export interface CustomerInfosProps {
     handleCustomerInfoUpdate?: any;
     customer?: Customer;
     cart?: Cart;
-    isFloatingLabelEnabled?: boolean;
     assigned_field_display: boolean
 }
 
@@ -93,8 +91,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
             bottler,
             assigned_program_id,
             assigned_field_display,
-            team_name,
-            isFloatingLabelEnabled
+            team_name
         } = this.props;
 
         const {
@@ -124,7 +121,7 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                     { (customId == customerGrpId) &&
                                                         <div
                                                             key={index}
-                                                            className={`dynamic-form-field ${isFloatingLabelEnabled && 'floating-form-field'}`}
+                                                            className={`dynamic-form-field`}
                                                         >
                                                             <div className='form-field' key={cusIndex}>
                                                                 <Label
@@ -174,7 +171,6 @@ class CustomerInfos extends Component<CustomerInfosProps, CustomerInfosState> {
                                                                 type={'text'}
                                                                 value={infoField.metafieldKey == "po_number" ? po_number : assigned_program_id}
                                                                 additionalClassName={infoField.metafieldKey == "po_number" && (budgeting && budgeting.value == '100% BODYARMOR') ? "input_disabled" : ""}
-                                                                isFloatingLabelEnabled={isFloatingLabelEnabled}
                                                             />
                                                         </div>
                                                     </div>
@@ -479,8 +475,7 @@ export function mapToShippingProps({
 
     return {
         customer,
-        cart,
-        isFloatingLabelEnabled: isFloatingLabelEnabled(config.checkoutSettings)
+        cart
     };
 }
 
