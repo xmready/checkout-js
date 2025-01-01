@@ -775,6 +775,7 @@ class Checkout extends Component<
     private handleAfterSignInAfter: () => void = async () => {
         const {loadCheckout, checkoutId, extensionService} = this.props;
         const { cusGrpParse } = this.state;
+      
         try {
             const [{ data }] = await Promise.all([loadCheckout(checkoutId, {
                 params: {
