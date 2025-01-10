@@ -21,6 +21,7 @@ interface MultiShippingFormV2Values {
 }
 
 export interface MultiShippingFormV2Props {
+    cartHasChanged: boolean;
     customerMessage: string;
     defaultCountryCode?: string;
     countriesWithAutocomplete: string[];
@@ -34,8 +35,8 @@ const MultiShippingFormV2: FunctionComponent<MultiShippingFormV2Props> = ({
     defaultCountryCode,
     isLoading,
     onUnhandledError,
+    cartHasChanged,
 }: MultiShippingFormV2Props) => {
-    const [isAddShippingDestination, setIsAddShippingDestination] = useState(false);
     const [errorConsignmentNumber, setErrorConsignmentNumber] = useState<number | undefined>();
 
     const {
@@ -47,6 +48,10 @@ const MultiShippingFormV2: FunctionComponent<MultiShippingFormV2Props> = ({
 
     const consignments = getConsignments() || EMPTY_ARRAY;
     const config = getConfig();
+
+    const [isAddShippingDestination, setIsAddShippingDestination] = useState(
+        consignments.length === 0,
+    );
 
     const isEveryConsignmentHasShippingOption = hasSelectedShippingOptions(consignments);
     const shouldDisableSubmit = useMemo(() => {
@@ -70,6 +75,12 @@ const MultiShippingFormV2: FunctionComponent<MultiShippingFormV2Props> = ({
                 (consignment) => !consignment.selectedShippingOption,
             );
 
+            if (errorConsignmentIndex === -1) {
+                setIsAddShippingDestination(true);
+                
+                return;
+            }
+            
             setErrorConsignmentNumber(errorConsignmentIndex + 1);
         } else if (isAddShippingDestination) {
             setErrorConsignmentNumber(consignments.length + 1);
@@ -112,19 +123,20 @@ const MultiShippingFormV2: FunctionComponent<MultiShippingFormV2Props> = ({
                     shippingQuoteFailedMessage={shippingQuoteFailedMessage}
                 />
             ))}
-            {(consignments.length === 0 || isAddShippingDestination) && (
+            {isAddShippingDestination && (
                 <NewConsignment
                     consignmentNumber={consignments.length === 0 ? 1 : (consignments.length + 1)}
                     countriesWithAutocomplete={countriesWithAutocomplete}
                     defaultCountryCode={defaultCountryCode}
                     isLoading={isLoading}
                     onUnhandledError={onUnhandledError}
+                    resetErrorConsignmentNumber={resetErrorConsignmentNumber}
                     setIsAddShippingDestination={setIsAddShippingDestination}
                 />)
             }
             {hasUnassignedItems &&
                 <Button className='add-consignment-button' onClick={handleAddShippingDestination} variant={ButtonVariant.Secondary}>
-                    Add new destination
+                    <TranslatedString id="shipping.multishipping_add_new_destination" />
                 </Button>
             }
             {Boolean(errorConsignmentNumber) && (
@@ -138,6 +150,7 @@ const MultiShippingFormV2: FunctionComponent<MultiShippingFormV2Props> = ({
                 </div>
             )}
             <MultiShippingFormV2Footer
+                cartHasChanged={cartHasChanged}
                 isLoading={isLoading}
                 shouldDisableSubmit={shouldDisableSubmit}
                 shouldShowOrderComments={shouldShowOrderComments}

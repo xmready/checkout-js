@@ -17,7 +17,6 @@ import {
 import React from 'react';
 
 import { withLanguage, WithLanguageProps } from '@bigcommerce/checkout/locale';
-import { usePayPalFastlaneAddress } from '@bigcommerce/checkout/paypal-fastlane-integration';
 
 import MultiShippingForm, { MultiShippingFormValues } from './MultiShippingForm';
 import MultiShippingFormV2 from './MultiShippingFormV2';
@@ -46,6 +45,7 @@ export interface ShippingFormProps {
     isInitialValueLoaded: boolean;
     isNewMultiShippingUIEnabled: boolean;
     validateGoogleMapAutoCompleteMaxLength: boolean;
+    validateAddressFields: boolean;
     assignItem(consignment: ConsignmentAssignmentRequestBody): Promise<CheckoutSelectors>;
     deinitialize(options: ShippingRequestOptions): Promise<CheckoutSelectors>;
     deleteConsignments(): Promise<Address | undefined>;
@@ -66,47 +66,43 @@ export interface ShippingFormProps {
 }
 
 const ShippingForm = ({
-    addresses,
-    assignItem,
-    cart,
-    cartHasChanged,
-    createCustomerAddress,
-    consignments,
-    countries,
-    countriesWithAutocomplete,
-    onCreateAccount,
-    customerMessage,
-    deinitialize,
-    deleteConsignments,
-    getFields,
-    googleMapsApiKey,
-    initialize,
-    isBillingSameAsShipping,
-    isGuest,
-    isLoading,
-    isMultiShippingMode,
-    methodId,
-    onMultiShippingSubmit,
-    onSignIn,
-    onSingleShippingSubmit,
-    onUnhandledError,
-    onUseNewAddress,
-    shippingAddress,
-    shouldShowOrderComments,
-    shouldShowSaveAddress,
-    signOut,
-    updateAddress,
-    isShippingStepPending,
-    isFloatingLabelEnabled,
-    isInitialValueLoaded,
-    isNewMultiShippingUIEnabled,
-    validateGoogleMapAutoCompleteMaxLength,
-}: ShippingFormProps & WithLanguageProps) => {
-    const { isPayPalFastlaneEnabled, paypalFastlaneAddresses } = usePayPalFastlaneAddress();
-
-    const shippingAddresses = isPayPalFastlaneEnabled && isGuest
-        ? paypalFastlaneAddresses
-        : addresses;
+      addresses,
+      assignItem,
+      cart,
+      cartHasChanged,
+      createCustomerAddress,
+      consignments,
+      countries,
+      countriesWithAutocomplete,
+      onCreateAccount,
+      customerMessage,
+      deinitialize,
+      deleteConsignments,
+      getFields,
+      googleMapsApiKey,
+      initialize,
+      isBillingSameAsShipping,
+      isGuest,
+      isLoading,
+      isMultiShippingMode,
+      methodId,
+      onMultiShippingSubmit,
+      onSignIn,
+      onSingleShippingSubmit,
+      onUnhandledError,
+      onUseNewAddress,
+      shippingAddress,
+      shouldShowOrderComments,
+      shouldShowSaveAddress,
+      signOut,
+      updateAddress,
+      isShippingStepPending,
+      isFloatingLabelEnabled,
+      isInitialValueLoaded,
+      isNewMultiShippingUIEnabled,
+      validateGoogleMapAutoCompleteMaxLength,
+      validateAddressFields,
+  }: ShippingFormProps & WithLanguageProps) => {
 
     const getMultiShippingForm = () => {
         if (isGuest) {
@@ -117,6 +113,7 @@ const ShippingForm = ({
 
         if (isNewMultiShippingUIEnabled) {
             return <MultiShippingFormV2
+                cartHasChanged={cartHasChanged}
                 countriesWithAutocomplete={countriesWithAutocomplete}
                 customerMessage={customerMessage}
                 defaultCountryCode={shippingAddress?.countryCode}
@@ -127,7 +124,7 @@ const ShippingForm = ({
         }
 
         return <MultiShippingForm
-            addresses={shippingAddresses}
+            addresses={addresses}
             assignItem={assignItem}
             cart={cart}
             cartHasChanged={cartHasChanged}
@@ -146,6 +143,7 @@ const ShippingForm = ({
             onUnhandledError={onUnhandledError}
             onUseNewAddress={onUseNewAddress}
             shouldShowOrderComments={shouldShowOrderComments}
+            validateAddressFields={validateAddressFields}
         />;
     };
 
@@ -153,7 +151,7 @@ const ShippingForm = ({
         getMultiShippingForm()
     ) : (
         <SingleShippingForm
-            addresses={shippingAddresses}
+            addresses={addresses}
             cartHasChanged={cartHasChanged}
             consignments={consignments}
             countries={countries}
@@ -178,6 +176,7 @@ const ShippingForm = ({
             shouldShowSaveAddress={shouldShowSaveAddress}
             signOut={signOut}
             updateAddress={updateAddress}
+            validateAddressFields={validateAddressFields}
             validateGoogleMapAutoCompleteMaxLength={validateGoogleMapAutoCompleteMaxLength}
         />
     );

@@ -2,24 +2,28 @@ import { ConsignmentLineItem } from "@bigcommerce/checkout-sdk";
 import React, { FunctionComponent, useState } from "react";
 
 import { preventDefault } from "@bigcommerce/checkout/dom-utils";
+import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { useCheckout } from "@bigcommerce/checkout/payment-integration-api";
 
 import { IconChevronDown, IconChevronUp } from "../ui/icon";
+import { isMobileView as isMobileViewUI } from "../ui/responsive";
 
 import AllocateItemsModal from "./AllocateItemsModal";
 import ConsignmentLineItemDetail from "./ConsignmentLineItemDetail";
 import { AssignItemFailedError, UnassignItemError } from "./errors";
 import { useDeallocateItem } from "./hooks/useDeallocateItem";
 import { useMultiShippingConsignmentItems } from "./hooks/useMultishippingConsignmentItems";
+import { ItemSplitTooltip } from "./ItemSplitTooltip";
 import { MultiShippingConsignmentData, MultiShippingTableItemWithType } from "./MultishippingV2Type";
 
 interface ConsignmentLineItemProps {
     consignmentNumber: number;
     consignment: MultiShippingConsignmentData;
     onUnhandledError(error: Error): void;
+    isLoading: boolean;
 }
 
-const ConsignmentLineItem: FunctionComponent<ConsignmentLineItemProps> = ({ consignmentNumber, consignment, onUnhandledError }: ConsignmentLineItemProps) => {
+const ConsignmentLineItem: FunctionComponent<ConsignmentLineItemProps> = ({ consignmentNumber, consignment, onUnhandledError, isLoading }: ConsignmentLineItemProps) => {
     const [isOpenAllocateItemsModal, setIsOpenAllocateItemsModal] = useState(false);
     const [showItems, setShowItems] = useState(true);
 
@@ -72,6 +76,8 @@ const ConsignmentLineItem: FunctionComponent<ConsignmentLineItemProps> = ({ cons
         setShowItems(!showItems);
     }
 
+    const isMobileView = isMobileViewUI();
+
     const itemsCount = consignment.shippableItemsCount;
 
     return (
@@ -80,6 +86,7 @@ const ConsignmentLineItem: FunctionComponent<ConsignmentLineItemProps> = ({ cons
                 address={consignment.shippingAddress}
                 assignedItems={consignment}
                 consignmentNumber={consignmentNumber}
+                isLoading={isLoading}
                 isOpen={isOpenAllocateItemsModal}
                 onAllocateItems={handleAssignItems}
                 onRequestClose={toggleAllocateItemsModal}
@@ -88,7 +95,12 @@ const ConsignmentLineItem: FunctionComponent<ConsignmentLineItemProps> = ({ cons
             />
             <div className="consignment-line-item-header">
                 <div>
-                    <h3>{itemsCount > 1 ? `${itemsCount} items` : `${itemsCount} item`} allocated</h3>
+                    <h3>{itemsCount > 1 ? `${itemsCount} items` : `${itemsCount} item`} allocated </h3>
+
+                    {consignment.hasSplitItems && (
+                        <ItemSplitTooltip />
+                    )}
+                    
                     <a
                         className="expand-items-button"
                         data-test="expand-items-button"
@@ -97,12 +109,12 @@ const ConsignmentLineItem: FunctionComponent<ConsignmentLineItemProps> = ({ cons
                     >
                         {showItems ? (
                             <>
-                                Hide items
+                                {!isMobileView && <TranslatedString id="shipping.multishipping_item_hide_items_message" />}
                                 <IconChevronUp />
                             </>
                         ) : (
                             <>
-                                Show items
+                                {!isMobileView && <TranslatedString id="shipping.multishipping_item_show_items_message" />}
                                 <IconChevronDown />
                             </>
                         )}
@@ -113,7 +125,7 @@ const ConsignmentLineItem: FunctionComponent<ConsignmentLineItemProps> = ({ cons
                     href="#"
                     onClick={preventDefault(toggleAllocateItemsModal)}
                 >
-                    Reallocate items
+                    <TranslatedString id="shipping.multishipping_item_reallocated_message" />
                 </a>
             </div>
             {showItems

@@ -1,8 +1,11 @@
 import React from "react";
 
+import { TranslatedString } from '@bigcommerce/checkout/locale';
+
 import { IconClose } from "../ui/icon";
 
 import { renderItemContent } from "./ConsignmentLineItemDetail";
+import { ItemSplitTooltip } from "./ItemSplitTooltip";
 import { MultiShippingTableData, MultiShippingTableItemWithType } from "./MultishippingV2Type";
 
 interface AllocatedItemsListProps {
@@ -13,7 +16,12 @@ interface AllocatedItemsListProps {
 const AllocatedItemsList = ({ assignedItems, onUnassignItem }: AllocatedItemsListProps) => {
     return (
         <div className="allocated-line-items">
-            <h3>{assignedItems.shippableItemsCount > 1 ? `${assignedItems.shippableItemsCount} items` : `${assignedItems.shippableItemsCount} item`} allocated</h3>
+            <h3>
+                <TranslatedString data={{ count: assignedItems.shippableItemsCount }} id="shipping.multishipping_item_allocated_message" />
+                {assignedItems.hasSplitItems && (
+                    <ItemSplitTooltip />
+                )}
+            </h3>
             <ul className="allocated-line-items-list">
                 {assignedItems.lineItems.map(item => (
                     <li key={item.id}>

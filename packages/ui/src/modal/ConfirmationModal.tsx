@@ -1,4 +1,5 @@
-import React from 'react';
+import { noop } from 'lodash';
+import React, { ReactNode } from 'react';
 
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 
@@ -11,8 +12,10 @@ interface ConfirmationModalProps {
     headerId: string;
     messageId: string;
     isModalOpen: boolean;
-    onRequestClose: () => void;
+    onRequestClose?: () => void;
     action: () => void;
+    actionButtonLabel?: ReactNode;
+    shouldShowCloseButton?: boolean;
 }
 
 const ConfirmationModal = ({
@@ -20,14 +23,16 @@ const ConfirmationModal = ({
     messageId,
     isModalOpen,
     action,
-    onRequestClose,
+    actionButtonLabel,
+    onRequestClose = noop,
+    shouldShowCloseButton = true,
 }: ConfirmationModalProps) => {
     return (
         <Modal
             additionalModalClassName="modal--confirm"
             footer={
                 <Button onClick={action} size={ButtonSize.Small} variant={ButtonVariant.Primary}>
-                    <TranslatedString id="common.confirm_action" />
+                    {actionButtonLabel ?? <TranslatedString id="common.confirm_action" />}
                 </Button>
             }
             header={
@@ -39,7 +44,7 @@ const ConfirmationModal = ({
             }
             isOpen={isModalOpen}
             onRequestClose={onRequestClose}
-            shouldShowCloseButton={true}
+            shouldShowCloseButton={shouldShowCloseButton}
         >
             <p aria-live="assertive" role="alert">
                 <TranslatedString id={messageId} />

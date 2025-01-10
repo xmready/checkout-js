@@ -2,6 +2,140 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.553.2](https://github.com/bigcommerce/checkout-js/compare/v1.553.1...v1.553.2) (2025-01-08)
+
+
+### Bug Fixes
+
+* **payment:** PAYPAL-5026 updated import source for isPayPalCommerceFastlaneMethod method ([bbed00c](https://github.com/bigcommerce/checkout-js/commit/bbed00c86c961aea34bedec0f4b03493ad53176e))
+
+### [1.553.1](https://github.com/bigcommerce/checkout-js/compare/v1.553.0...v1.553.1) (2025-01-08)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-8919 resolve cosmetic ui issues for new multishipping ([#2136](https://github.com/bigcommerce/checkout-js/issues/2136)) ([ac6e339](https://github.com/bigcommerce/checkout-js/commit/ac6e3390b09a8e080607b9d5380f0b2950e1a576))
+
+## [1.553.0](https://github.com/bigcommerce/checkout-js/compare/v1.552.1...v1.553.0) (2025-01-06)
+
+
+### Features
+
+* **other:** LOCAL-1444 delivery translation ([408471a](https://github.com/bigcommerce/checkout-js/commit/408471a539d3217bcc918e87bb1a017fcc4e50ca))
+
+### [1.552.1](https://github.com/bigcommerce/checkout-js/compare/v1.552.0...v1.552.1) (2024-12-26)
+
+## [1.552.0](https://github.com/bigcommerce/checkout-js/compare/v1.551.2...v1.552.0) (2024-12-26)
+
+
+### Features
+
+* **payment:** PAYPAL-4692 fixed credit card loading glitch ([a9ddd90](https://github.com/bigcommerce/checkout-js/commit/a9ddd90326d92c4eb261664ffa9892739496d5fd))
+
+### [1.551.2](https://github.com/bigcommerce/checkout-js/compare/v1.551.1...v1.551.2) (2024-12-24)
+
+### [1.551.1](https://github.com/bigcommerce/checkout-js/compare/v1.551.0...v1.551.1) (2024-12-23)
+
+## [1.551.0](https://github.com/bigcommerce/checkout-js/compare/v1.550.0...v1.551.0) (2024-12-23)
+
+
+### Features
+
+* **other:** LOCAL-1444 delivery translation ([51cd286](https://github.com/bigcommerce/checkout-js/commit/51cd28680da2d3557f7f63a5cdbcb40f875458fa))
+* **other:** LOCAL-1444 delivery translation ([#2128](https://github.com/bigcommerce/checkout-js/issues/2128)) ([5d04448](https://github.com/bigcommerce/checkout-js/commit/5d044486eb6925c7cab3aae0412ff7a0f68b22b5))
+
+## [1.550.0](https://github.com/bigcommerce/checkout-js/compare/v1.549.0...v1.550.0) (2024-12-17)
+
+
+### Features
+
+* **payment:** STRIPE-546 allow billing address edit on Google Pay ([237a0f8](https://github.com/bigcommerce/checkout-js/commit/237a0f89e0b36d9d9a49833ba0a629ed444a7718))
+
+## [1.549.0](https://github.com/bigcommerce/checkout-js/compare/v1.548.3...v1.549.0) (2024-12-17)
+
+
+### Features
+
+* **payment:** PAYPAL-4827 fixed fastlane shipping strategy bug ([7e71706](https://github.com/bigcommerce/checkout-js/commit/7e7170690efef4d92c8f9b3688dddc47104be300))
+
+### [1.548.3](https://github.com/bigcommerce/checkout-js/compare/v1.548.2...v1.548.3) (2024-12-17)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-8803 fix reordering of consignments in multishipping ([#2127](https://github.com/bigcommerce/checkout-js/issues/2127)) ([5907542](https://github.com/bigcommerce/checkout-js/commit/5907542e81f5995862033e2516f4f12f012178c6))
+
+### [1.548.2](https://github.com/bigcommerce/checkout-js/compare/v1.548.1...v1.548.2) (2024-12-17)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-8892 Update Digital Item Price Mapping ([#2130](https://github.com/bigcommerce/checkout-js/issues/2130)) ([1edb0aa](https://github.com/bigcommerce/checkout-js/commit/1edb0aafa10b871414b93a01fd055e38193ecbe9))
+
+### [1.548.1](https://github.com/bigcommerce/checkout-js/compare/v1.548.0...v1.548.1) (2024-12-16)
+
+## [1.548.0](https://github.com/bigcommerce/checkout-js/compare/v1.547.0...v1.548.0) (2024-12-16)
+
+
+### Features
+
+* **payment:** STRIPE-488 add Google Pay error text ([2c9758b](https://github.com/bigcommerce/checkout-js/commit/2c9758b3b8f73139c18c7fc173a81a8fa697f20b))
+
+## [1.547.0](https://github.com/bigcommerce/checkout-js/compare/v1.546.6...v1.547.0) (2024-12-15)
+
+
+### Features
+
+* **shipping:** CHECKOUT-8861 Handle promotional item in multishipping ([#2118](https://github.com/bigcommerce/checkout-js/issues/2118)) ([c4571f0](https://github.com/bigcommerce/checkout-js/commit/c4571f0f8c519a6c98dec180e48c92c57005207e))
+
+### [1.546.6](https://github.com/bigcommerce/checkout-js/compare/v1.546.5...v1.546.6) (2024-12-12)
+
+### [1.546.5](https://github.com/bigcommerce/checkout-js/compare/v1.546.4...v1.546.5) (2024-12-11)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-8824 Fix Error Message for First Consignment ([#2123](https://github.com/bigcommerce/checkout-js/issues/2123)) ([a17e4e0](https://github.com/bigcommerce/checkout-js/commit/a17e4e043363f48b400690b8a7b580a0514a88a1))
+
+### [1.546.4](https://github.com/bigcommerce/checkout-js/compare/v1.546.3...v1.546.4) (2024-12-11)
+
+### [1.546.3](https://github.com/bigcommerce/checkout-js/compare/v1.546.2...v1.546.3) (2024-12-11)
+
+### [1.546.2](https://github.com/bigcommerce/checkout-js/compare/v1.546.1...v1.546.2) (2024-12-10)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-7560 fix experiment name ([#2122](https://github.com/bigcommerce/checkout-js/issues/2122)) ([5d9f946](https://github.com/bigcommerce/checkout-js/commit/5d9f946ed504210c59125ce74539c0ad63ea6d68))
+
+### [1.546.1](https://github.com/bigcommerce/checkout-js/compare/v1.546.0...v1.546.1) (2024-12-10)
+
+
+### Bug Fixes
+
+* **shipping:** CHECKOUT-7560 add max length validation for address fields ([#2112](https://github.com/bigcommerce/checkout-js/issues/2112)) ([701985a](https://github.com/bigcommerce/checkout-js/commit/701985a8c9fed6b99c906fa27aee976c69d7cf78))
+* **shipping:** CHECKOUT-8872 Fix Missing Shipping Option ([#2114](https://github.com/bigcommerce/checkout-js/issues/2114)) ([d722410](https://github.com/bigcommerce/checkout-js/commit/d722410ce984e4574094d99a674a97460a2ecbe7))
+
+## [1.546.0](https://github.com/bigcommerce/checkout-js/compare/v1.545.2...v1.546.0) (2024-12-09)
+
+
+### Features
+
+* **checkout:** CHECKOUT-8774 Display item split tooltip ([513ff2f](https://github.com/bigcommerce/checkout-js/commit/513ff2ffad812501838f07ce9982327e58dc8cd0))
+* **checkout:** CHECKOUT-8774 improve coding ([7c47002](https://github.com/bigcommerce/checkout-js/commit/7c4700211949ad45ae524c96a2e0a5dc522aeaeb))
+* **checkout:** CHECKOUT-8780 Add translated strings for all the text used in new multi shipping UI ([#2102](https://github.com/bigcommerce/checkout-js/issues/2102)) ([d6d1218](https://github.com/bigcommerce/checkout-js/commit/d6d1218e0628e462d79bfc36fdd278c7936663ea))
+* **checkout:** CHECKOUT-8824 Add Consignment Not Completed Message ([#2099](https://github.com/bigcommerce/checkout-js/issues/2099)) ([6fd4945](https://github.com/bigcommerce/checkout-js/commit/6fd4945e82c3d5748014e4d55d2a382a5837858d))
+* **checkout:** CHECKOUT-8869 Remove Available Shipping Option Check ([#2111](https://github.com/bigcommerce/checkout-js/issues/2111)) ([c8b2e0e](https://github.com/bigcommerce/checkout-js/commit/c8b2e0e638ba74ac0608303f38c37d3d5c090444))
+* **checkout:** PI-2944 Update HostedFormOptions usage in checkout-js after renaming ([#2110](https://github.com/bigcommerce/checkout-js/issues/2110)) ([6594f23](https://github.com/bigcommerce/checkout-js/commit/6594f23883e143c516aee90db7c9b1a43b1c3df8))
+* **other:** LOCAL-1444 delivery translation ([e264d7a](https://github.com/bigcommerce/checkout-js/commit/e264d7ac0c87d543273cd177d6e9ef697666679f))
+* **other:** LOCAL-1444 delivery translation ([017def5](https://github.com/bigcommerce/checkout-js/commit/017def5d185b20332fde49e67cbf5ea597f15c60))
+* **other:** LOCAL-1444 delivery translation ([#2108](https://github.com/bigcommerce/checkout-js/issues/2108)) ([99cacf7](https://github.com/bigcommerce/checkout-js/commit/99cacf784f1d26be36d7cb8f013483e5bf523ea0))
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-8869 Handle Errors in Extension Rendering ([#2105](https://github.com/bigcommerce/checkout-js/issues/2105)) ([6807161](https://github.com/bigcommerce/checkout-js/commit/6807161f48eb0b6365c9b6569a77976c0b0b5fed))
+
 ### [1.545.2](https://github.com/bigcommerce/checkout-js/compare/v1.545.1...v1.545.2) (2024-11-13)
 
 ### [1.545.1](https://github.com/bigcommerce/checkout-js/compare/v1.545.0...v1.545.1) (2024-11-08)

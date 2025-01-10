@@ -25,6 +25,9 @@ import {
     cartReadyForMultiShipping,
     CheckoutPageNodeObject,
     consignment,
+    shippingAddress2,
+    shippingAddress3,
+    shippingQuoteFailedMessage,
 } from '@bigcommerce/checkout/test-framework';
 
 import Checkout, { CheckoutProps } from '../checkout/Checkout';
@@ -97,7 +100,12 @@ describe('Multi-shipping V2', () => {
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleProvider checkoutService={checkoutService}>
                     <AnalyticsProviderMock>
-                        <ExtensionProvider checkoutService={checkoutService}>
+                        <ExtensionProvider
+                            checkoutService={checkoutService}
+                            errorLogger={{
+                                log: jest.fn(),
+                            }}
+                        >
                             <Checkout {...props} />
                         </ExtensionProvider>
                     </AnalyticsProviderMock>
@@ -106,58 +114,29 @@ describe('Multi-shipping V2', () => {
         );
     });
 
-    it('renders multi-shipping v2 component and finishes the shipping step', async () => {
+    it('creates two consignments and works around the API side issue', async () => {
+        // ✅clicks the `Add new destination` button and sees error
+        // ✅creates the first consignment with the cart itemId `x`
+        // ✅sees the first consignment's default shipping method selected
+        // ✅creates the second consignment with the cart itemId `y`
+        // ✅sees the loss of the first consignment's selected shipping method as an API issue
+        // ✅sees the first consignment's previous selected shipping method restored
+        // ✅sees the second consignment's default shipping method selected
+
+        jest.spyOn(checkoutService, 'selectConsignmentShippingOption');
+
         checkout.use('cartReadyForMultiShipping');
 
         render(<CheckoutTest {...defaultProps} />);
 
         await checkout.waitForShippingStep();
 
-        checkout.updateCheckout(
-            'post',
-            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments',
-            {
-                ...cartReadyForMultiShipping,
-                consignments: [
-                    {
-                        ...consignment,
-                        availableShippingOptions: undefined,
-                        selectedShippingOption: undefined,
-                    },
-                ],
-            },
+        await userEvent.click(screen.getByText(/Ship to multiple addresses/i));
+        await userEvent.click(
+            await screen.findByRole('button', {
+                name: 'Add new destination',
+            }),
         );
-        // eslint-disable-next-line testing-library/no-unnecessary-act
-        await act(async () => {
-            await userEvent.click(screen.getByText(/Ship to multiple addresses/i));
-            await userEvent.click(screen.getByText(/Enter a new address/i));
-            await userEvent.click(screen.getByText(/789 Test Ave/i));
-            await userEvent.click(screen.getByText(/Allocate items/i));
-            await userEvent.click(screen.getByText(/Select all items left/i));
-            await userEvent.click(screen.getByRole('button', { name: 'Allocate' }));
-            await userEvent.click(
-                await screen.findByRole('button', { name: 'Add new destination' }),
-            );
-        });
-
-        checkout.updateCheckout(
-            'post',
-            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments',
-            {
-                ...cartReadyForMultiShipping,
-                consignments: [
-                    {
-                        ...consignment,
-                    },
-                ],
-            },
-        );
-
-        expect(
-            screen.getByText(
-                "Unfortunately one or more items in your cart can't be shipped to your location. Please choose a different delivery address.",
-            ),
-        ).toBeInTheDocument();
         expect(
             screen.getByText(
                 language.translate('shipping.multishipping_incomplete_consignment_error', {
@@ -166,19 +145,82 @@ describe('Multi-shipping V2', () => {
             ),
         ).toBeInTheDocument();
 
-        await userEvent.click(
-            screen.getByText(/checkout test, 130 Pitt St, Sydney, New South Wales, AU, 2000/i),
+        checkout.updateCheckout(
+            'post',
+            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments',
+            {
+                ...cartReadyForMultiShipping,
+                consignments: [
+                    {
+                        ...consignment,
+                        selectedShippingOption: undefined,
+                    },
+                ],
+            },
         );
-        await userEvent.click(screen.getByText(/123 Example St/i));
 
-        expect(await screen.findAllByRole('radio')).toHaveLength(2);
-        expect(screen.getByLabelText(/Pickup In Store/i)).toBeInTheDocument();
+        checkout.updateCheckout(
+            'put',
+            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments/consignment-1',
+            {
+                ...cartReadyForMultiShipping,
+                consignments: [consignment],
+            },
+        );
 
-        const selectedShippingOptionValue1 = screen
-            .getByRole('radio', { checked: true })
-            .getAttribute('value');
+        // eslint-disable-next-line testing-library/no-unnecessary-act
+        await act(async () => {
+            await userEvent.click(screen.getByText('Choose a shipping address'));
+            await userEvent.click(screen.getByText(/111 Testing Rd/i));
+            await userEvent.click(screen.getByText('Allocate items'));
+            await userEvent.type(screen.getByLabelText('Quantity of Item X'), '1');
+            await userEvent.click(screen.getByRole('button', { name: 'Allocate' }));
+        });
 
-        expect(selectedShippingOptionValue1).toBe('option-id-pick-up');
+        const selectedShippingOptions = await screen.findAllByRole('radio', { checked: true });
+
+        // eslint-disable-next-line jest-dom/prefer-to-have-attribute
+        expect(selectedShippingOptions[0].getAttribute('value')).toBe('option-id-pick-up');
+        expect(checkoutService.selectConsignmentShippingOption).toHaveBeenCalledTimes(1);
+        expect(
+            screen.queryByText(
+                language.translate('shipping.multishipping_incomplete_consignment_error', {
+                    consignmentNumber: 1,
+                }),
+            ),
+        ).not.toBeInTheDocument();
+
+        const consignment2 = {
+            ...consignment,
+            id: 'consignment-2',
+            lineItemIds: ['y'],
+            shippingAddress: {
+                ...shippingAddress2,
+                shouldSaveAddress: true,
+            },
+            address: {
+                ...shippingAddress2,
+                shouldSaveAddress: true,
+            },
+        };
+
+        checkout.updateCheckout(
+            'post',
+            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments',
+            {
+                ...cartReadyForMultiShipping,
+                consignments: [
+                    {
+                        ...consignment,
+                        selectedShippingOption: undefined,
+                    },
+                    {
+                        ...consignment2,
+                        selectedShippingOption: undefined,
+                    },
+                ],
+            },
+        );
 
         checkout.updateCheckout(
             'put',
@@ -188,18 +230,102 @@ describe('Multi-shipping V2', () => {
                 consignments: [
                     {
                         ...consignment,
-                        selectedShippingOption: consignment.availableShippingOptions?.[1],
+                        selectedShippingOption: consignment.availableShippingOptions?.[0],
+                    },
+                    {
+                        ...consignment2,
+                        selectedShippingOption: undefined,
                     },
                 ],
             },
         );
-        await userEvent.click(screen.getByLabelText(/Flat Rate/i));
 
-        const selectedShippingOptionValue2 = screen
-            .getByRole('radio', { checked: true })
-            .getAttribute('value');
+        checkout.updateCheckout(
+            'put',
+            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments/consignment-2',
+            {
+                ...cartReadyForMultiShipping,
+                consignments: [
+                    {
+                        ...consignment,
+                        selectedShippingOption: consignment2.availableShippingOptions?.[0],
+                    },
+                    {
+                        ...consignment2,
+                        selectedShippingOption: consignment2.availableShippingOptions?.[0],
+                    },
+                ],
+            },
+        );
 
-        expect(selectedShippingOptionValue2).toBe('option-id-flat-rate');
+        // eslint-disable-next-line testing-library/no-unnecessary-act
+        await act(async () => {
+            await userEvent.click(screen.getByRole('button', { name: 'Add new destination' }));
+            await userEvent.click(screen.getByText('Choose a shipping address'));
+            await userEvent.click(screen.getByText(/222 Testing Rd/i));
+            await userEvent.click(screen.getByText('Allocate items'));
+            await userEvent.type(screen.getByLabelText('Quantity of Item Y'), '2');
+            await userEvent.click(screen.getByRole('button', { name: 'Allocate' }));
+        });
+
+        const allSelectedShippingOptions = await screen.findAllByRole('radio', { checked: true });
+
+        expect(checkoutService.selectConsignmentShippingOption).toHaveBeenCalledTimes(2);
+        expect(allSelectedShippingOptions).toHaveLength(2);
+        // eslint-disable-next-line jest-dom/prefer-to-have-attribute
+        expect(allSelectedShippingOptions[0].getAttribute('value')).toBe('option-id-pick-up');
+        // eslint-disable-next-line jest-dom/prefer-to-have-attribute
+        expect(allSelectedShippingOptions[1].getAttribute('value')).toBe('option-id-pick-up');
+    });
+
+    it('updates the shipping option of a consignment', async () => {
+        // ✅creates the first consignment with the cart itemId `x`
+        // ✅no available shipping option for the selected shipping address
+        // ✅updates the first consignment's shipping address
+        // ✅sees the first consignment's default shipping method selected
+
+        jest.spyOn(checkoutService, 'selectConsignmentShippingOption');
+
+        checkout.use('cartReadyForMultiShipping');
+
+        render(<CheckoutTest {...defaultProps} />);
+
+        await checkout.waitForShippingStep();
+
+        await userEvent.click(screen.getByText(/Ship to multiple addresses/i));
+
+        checkout.updateCheckout(
+            'post',
+            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments',
+            {
+                ...cartReadyForMultiShipping,
+                consignments: [
+                    {
+                        ...consignment,
+                        selectedShippingOption: undefined,
+                        availableShippingOptions: undefined,
+                        shippingAddress: {
+                            ...shippingAddress3,
+                            shouldSaveAddress: true,
+                        },
+                    },
+                ],
+            },
+        );
+
+        // eslint-disable-next-line testing-library/no-unnecessary-act
+        await act(async () => {
+            await userEvent.click(screen.getByText('Choose a shipping address'));
+            await userEvent.click(
+                await screen.findByRole('button', { name: 'Add new destination' }),
+            );
+            await userEvent.click(screen.getByText(/333 Testing Rd/i));
+            await userEvent.click(screen.getByText('Allocate items'));
+            await userEvent.type(screen.getByLabelText('Quantity of Item X'), '1');
+            await userEvent.click(screen.getByRole('button', { name: 'Allocate' }));
+        });
+
+        expect(screen.getByText(shippingQuoteFailedMessage)).toBeInTheDocument();
         expect(
             screen.queryByText(
                 language.translate('shipping.multishipping_incomplete_consignment_error', {
@@ -207,5 +333,27 @@ describe('Multi-shipping V2', () => {
                 }),
             ),
         ).not.toBeInTheDocument();
+        expect(checkoutService.selectConsignmentShippingOption).not.toHaveBeenCalled();
+
+        checkout.updateCheckout(
+            'put',
+            '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments/consignment-1',
+            {
+                ...cartReadyForMultiShipping,
+                consignments: [consignment],
+            },
+        );
+
+        // eslint-disable-next-line testing-library/no-unnecessary-act
+        await act(async () => {
+            await userEvent.click(screen.getByText(/333 testing Rd/i));
+            await userEvent.click(screen.getByText(/111 testing Rd/i));
+        });
+
+        const selectedShippingOptions = await screen.findAllByRole('radio', { checked: true });
+
+        // eslint-disable-next-line jest-dom/prefer-to-have-attribute
+        expect(selectedShippingOptions[0].getAttribute('value')).toBe('option-id-pick-up');
+        expect(screen.queryByText(shippingQuoteFailedMessage)).not.toBeInTheDocument();
     });
 });

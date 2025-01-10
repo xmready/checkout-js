@@ -14,6 +14,7 @@ import { Form } from "../ui/form";
 import { Modal, ModalHeader } from "../ui/modal";
 
 import AllocatedItemsList from "./AllocatedItemsList";
+import { ItemSplitTooltip } from "./ItemSplitTooltip";
 import LeftToAllocateItemsTable from "./LeftToAllocateItemsTable";
 import { LineItemType, MultiShippingTableData, MultiShippingTableItemWithType } from "./MultishippingV2Type";
 
@@ -30,6 +31,7 @@ interface AllocateItemsModalProps {
     assignedItems?: MultiShippingTableData;
     onAllocateItems(consignmentLineItems: ConsignmentLineItem[]): void;
     onUnassignItem?(itemToDelete: MultiShippingTableItemWithType): void;
+    isLoading: boolean;
 }
 
 const AllocateItemsModal: FunctionComponent<AllocateItemsModalProps & FormikProps<AllocateItemsModalFormValues>> = ({
@@ -45,6 +47,7 @@ const AllocateItemsModal: FunctionComponent<AllocateItemsModalProps & FormikProp
     submitForm,
     errors,
     onUnassignItem,
+    isLoading,
 }: AllocateItemsModalProps & FormikProps<AllocateItemsModalFormValues>) => {
 
     const allocatedOrSelectedItemsMessage = useMemo(() => {
@@ -102,8 +105,25 @@ const AllocateItemsModal: FunctionComponent<AllocateItemsModalProps & FormikProp
 
     const modalFooter = (
         <>
-            <Button onClick={onRequestClose} variant={ButtonVariant.Secondary}>Cancel</Button>
-            <Button disabled={!dirty} onClick={submitForm} type="submit" variant={ButtonVariant.Primary}>{hasItemsAssigned ? 'Save' : 'Allocate'}</Button>
+            <Button
+                disabled={isLoading}
+                onClick={onRequestClose}
+                variant={ButtonVariant.Secondary}
+            >
+                <TranslatedString id="shipping.multishipping_items_allocate_cancel" />
+            </Button>
+            <Button
+                disabled={!hasItemsAssigned && !dirty}
+                isLoading={isLoading}
+                onClick={submitForm}
+                type="submit"
+                variant={ButtonVariant.Primary}
+            >
+                {hasItemsAssigned 
+                    ? <TranslatedString id="shipping.multishipping_items_allocate_save" /> 
+                    : <TranslatedString id="shipping.multishipping_items_allocate_allocate" />
+                }
+            </Button>
         </>
     );
 
@@ -112,16 +132,17 @@ const AllocateItemsModal: FunctionComponent<AllocateItemsModalProps & FormikProp
             additionalModalClassName="allocate-items-modal"
             footer={modalFooter}
             header={
-                <ModalHeader>
-                    <TranslatedString data={{ consignmentNumber }} id="shipping.multishipping_consignment_index_heading" />
-                </ModalHeader>
+                <>
+                    <ModalHeader>
+                        <TranslatedString data={{ consignmentNumber }} id="shipping.multishipping_consignment_index_heading" />
+                    </ModalHeader>
+                    <h4>{getAddressContent(address)}</h4>
+                </>
             }
             isOpen={isOpen}
             onRequestClose={onRequestClose}
-        >
-                        
+        > 
             <Form>
-                <h4>{getAddressContent(address)}</h4>
                 {formErrors.length > 0 && (
                     <div className="form-errors">
                         {formErrors.map((error, index) => (
@@ -140,21 +161,27 @@ const AllocateItemsModal: FunctionComponent<AllocateItemsModalProps & FormikProp
                 {hasUnassignedItems
                     ? <>
                         <div className="left-to-allocate-items-table-actions">
-                            <p>{allocatedOrSelectedItemsMessage}</p>
-                            <div>
+                            <p>
+                                {allocatedOrSelectedItemsMessage}
+                                {unassignedItems.hasSplitItems && (
+                                    <ItemSplitTooltip />
+                                )}
+                            </p>
+
+                            <div className="button-group">
                                 <a
                                     data-test="clear-all-items-button"
                                     href="#"
                                     onClick={preventDefault(handleClearAll)}
                                 >
-                                    Clear all
+                                    <TranslatedString id="shipping.multishipping_items_allocate_clear_all" />
                                 </a>
                                 <a
                                     data-test="allocate-all-items-button"
                                     href="#"
                                     onClick={preventDefault(handleSelectAll)}
                                 >
-                                    Select all items left
+                                    <TranslatedString id="shipping.multishipping_items_allocate_select_all_items_left" />
                                 </a>
                             </div>
                         </div>

@@ -8,6 +8,7 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 import { ExtensionProvider } from '@bigcommerce/checkout/checkout-extension';
+import { ErrorLogger } from '@bigcommerce/checkout/error-handling-utils';
 import {
     createLocaleContext,
     LocaleContext,
@@ -21,6 +22,7 @@ import { getAddressContent } from '../address/SingleLineStaticAddress';
 import { getCart } from '../cart/carts.mock';
 import { getCustomItem, getPhysicalItem } from '../cart/lineItem.mock';
 import { getCheckout } from '../checkout/checkouts.mock';
+import { createErrorLogger } from '../common/error';
 import { getStoreConfig } from '../config/config.mock';
 import { getCustomer } from '../customer/customers.mock';
 
@@ -33,6 +35,7 @@ describe('MultiShippingFormV2 Component', () => {
     let checkoutState: CheckoutSelectors;
     let defaultProps: MultiShippingFormV2Props;
     let localeContext: LocaleContextType;
+    let errorLogger: ErrorLogger;
 
     beforeEach(() => {
         localeContext = createLocaleContext(getStoreConfig());
@@ -43,11 +46,11 @@ describe('MultiShippingFormV2 Component', () => {
             customerMessage: 'x',
             countriesWithAutocomplete: [],
             isLoading: false,
-            onCreateAccount: jest.fn(),
-            onSignIn: jest.fn(),
             onUnhandledError: jest.fn(),
             onSubmit: jest.fn(),
         };
+
+        errorLogger=createErrorLogger();
 
         jest.spyOn(checkoutState.data, 'getBillingAddressFields').mockReturnValue(
             getAddressFormFields(),
@@ -76,13 +79,93 @@ describe('MultiShippingFormV2 Component', () => {
         });
     });
 
+    it('shows error when creating a new destination if destination 1 is incomplete.', async () => {
+        jest.spyOn(checkoutState.data, 'getConsignments').mockReturnValue([]);
+        jest.spyOn(checkoutState.data, 'getCheckout').mockReturnValue({
+            ...getCheckout(),
+            consignments: [],
+        });
+
+        render(
+            <CheckoutProvider checkoutService={checkoutService}>
+                <LocaleContext.Provider value={localeContext}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
+                        <MultiShippingFormV2 {...defaultProps} />
+                    </ExtensionProvider>
+                </LocaleContext.Provider>
+            </CheckoutProvider>,
+        );
+
+        await userEvent.click(
+            screen.getByRole('button', {
+                name: localeContext.language.translate(
+                    'shipping.multishipping_add_new_destination',
+                ),
+            }),
+        );
+
+        expect(screen.getByText('Destination #1')).toBeInTheDocument();
+        expect(
+            screen.getByText(
+                localeContext.language.translate(
+                    'shipping.multishipping_incomplete_consignment_error',
+                    {
+                        consignmentNumber: 1,
+                    },
+                ),
+            ),
+        ).toBeInTheDocument();
+    });
+
+    it('renders correct allocated items in banner if bundled items are present', async () => {
+        jest.spyOn(checkoutState.data, 'getCheckout').mockReturnValue({
+            ...getCheckout(),
+            consignments: [],
+            cart: {
+                ...getCart(),
+                lineItems: {
+                    ...getCart().lineItems,
+                    physicalItems: [{
+                        ...getPhysicalItem(),
+                        id: '1',
+                    },
+                    {
+                        ...getPhysicalItem(),
+                        id: '2',
+                        quantity: 1,
+                    },
+                    {
+                        ...getPhysicalItem(),
+                        id: '3',
+                        quantity: 1,
+                        parentId: '1'
+                    }],
+                    digitalItems: [],
+                },
+            },
+        });
+
+        render(
+            <CheckoutProvider checkoutService={checkoutService}>
+                <LocaleContext.Provider value={localeContext}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
+                        <MultiShippingFormV2 {...defaultProps} />
+                    </ExtensionProvider>
+                </LocaleContext.Provider>
+            </CheckoutProvider>,
+        );
+
+        expect(checkoutState.data.getCheckout()?.cart.lineItems.physicalItems.length).toBe(3);
+        expect(screen.getByText('2 items left to allocate')).toBeInTheDocument();
+    });
+
     it('renders shipping destination 1', async () => {
         const address = getShippingAddress();
 
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
@@ -141,7 +224,7 @@ describe('MultiShippingFormV2 Component', () => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
@@ -153,7 +236,11 @@ describe('MultiShippingFormV2 Component', () => {
 
         expect(screen.getByText('3 items left to allocate')).toBeInTheDocument();
 
-        const addShippingDestinationButton = screen.getByRole('button', { name: 'Add new destination' });
+        const addShippingDestinationButton = screen.getByRole('button', {
+            name: localeContext.language.translate(
+                'shipping.multishipping_add_new_destination',
+            ),
+        });
 
         expect(addShippingDestinationButton).toBeInTheDocument();
 
@@ -176,7 +263,7 @@ describe('MultiShippingFormV2 Component', () => {
         ).toBeInTheDocument();
 
         await waitFor(() => {
-            expect(screen.queryByText('No items allocated')).not.toBeInTheDocument();
+            expect(screen.queryByText(localeContext.language.translate('shipping.multishipping_no_item_allocated_message'))).not.toBeInTheDocument();
         });
 
         // eslint-disable-next-line testing-library/no-node-access
@@ -194,7 +281,7 @@ describe('MultiShippingFormV2 Component', () => {
             await userEvent.click(addressOption);
         }
 
-        expect(screen.getByText('No items allocated')).toBeInTheDocument();
+        expect(screen.getByText(localeContext.language.translate('shipping.multishipping_no_item_allocated_message'))).toBeInTheDocument();
 
         const allocateItemsButton = screen.getByTestId('allocate-items-button');
 
@@ -263,7 +350,7 @@ describe('MultiShippingFormV2 Component', () => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
@@ -272,7 +359,9 @@ describe('MultiShippingFormV2 Component', () => {
 
         expect(screen.getByText('1 item left to allocate')).toBeInTheDocument();
 
-        const addShippingDestinationButton = screen.getByRole('button', { name: 'Add new destination' });
+        const addShippingDestinationButton = screen.getByRole('button', {
+            name: localeContext.language.translate('shipping.multishipping_add_new_destination'),
+        });
 
         expect(addShippingDestinationButton).toBeInTheDocument();
         await userEvent.click(addShippingDestinationButton);
@@ -280,7 +369,7 @@ describe('MultiShippingFormV2 Component', () => {
         expect(screen.getByText('Destination #2')).toBeInTheDocument();
 
         await waitFor(() => {
-            expect(screen.queryByText('No items allocated')).not.toBeInTheDocument();
+            expect(screen.queryByText(localeContext.language.translate('shipping.multishipping_no_item_allocated_message'))).not.toBeInTheDocument();
         });
 
         // eslint-disable-next-line testing-library/no-node-access
@@ -298,7 +387,7 @@ describe('MultiShippingFormV2 Component', () => {
             await userEvent.click(addressOption);
         }
 
-        expect(screen.getByText('No items allocated')).toBeInTheDocument();
+        expect(screen.getByText(localeContext.language.translate('shipping.multishipping_no_item_allocated_message'))).toBeInTheDocument();
 
         const allocateItemsButton = screen.getByTestId('allocate-items-button');
 
@@ -347,7 +436,7 @@ describe('MultiShippingFormV2 Component', () => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
@@ -392,7 +481,7 @@ describe('MultiShippingFormV2 Component', () => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
@@ -425,11 +514,13 @@ describe('MultiShippingFormV2 Component', () => {
                     physicalItems: [{
                         ...getPhysicalItem(),
                         quantity: 2,
+                        sku: 'sku1',
                     },
                     {
                         ...getPhysicalItem(),
                         id: '2',
                         name: 'Product 2',
+                        sku: 'sku2',
                         quantity: 1,
                     }],
                 },
@@ -441,7 +532,7 @@ describe('MultiShippingFormV2 Component', () => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
@@ -461,6 +552,8 @@ describe('MultiShippingFormV2 Component', () => {
 
         expect(reAllocateItemsModal).toBeInTheDocument();
         expect(within(reAllocateItemsModal).getByText('Canvas Laundry Cart')).toBeInTheDocument();
+
+        expect(within(reAllocateItemsModal).queryByTestId('split-item-tooltip')).not.toBeInTheDocument();
 
         const removeItemButton = within(reAllocateItemsModal).getByTestId(`remove-${getPhysicalItem().id.toString()}-button`);
 
@@ -506,7 +599,7 @@ describe('MultiShippingFormV2 Component', () => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
@@ -569,12 +662,14 @@ describe('MultiShippingFormV2 Component', () => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <LocaleContext.Provider value={localeContext}>
-                    <ExtensionProvider checkoutService={checkoutService}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
                         <MultiShippingFormV2 {...defaultProps} />
                     </ExtensionProvider>
                 </LocaleContext.Provider>
             </CheckoutProvider>,
         );
+
+        expect(screen.queryByTestId('split-item-tooltip')).not.toBeInTheDocument();
 
         const closeButton = screen.getByTestId('delete-consignment-button');
 
@@ -583,5 +678,61 @@ describe('MultiShippingFormV2 Component', () => {
         await userEvent.click(closeButton);
 
         expect(checkoutService.deleteConsignment).toHaveBeenCalledWith(getConsignment().id);
+    });
+
+    it('displays split item tooltip', async () => {
+        jest.spyOn(checkoutState.data, 'getCheckout').mockReturnValue({
+            ...getCheckout(),
+            consignments: [{
+                ...getConsignment(),
+                lineItemIds: [
+                    '1',
+                    '2',
+                ]
+            }],
+            cart: {
+                ...getCart(),
+                lineItems: {
+                    ...getCart().lineItems,
+                    physicalItems: [
+                        {
+                            ...getPhysicalItem(),
+                            id: '1',
+                        },
+                        {
+                            ...getPhysicalItem(),
+                            id: '2',
+                        },
+                        {
+                            ...getPhysicalItem(),
+                            id: '3',
+                        },
+                        {
+                            ...getPhysicalItem(),
+                            id: '4',
+                        },
+                    ],
+                },
+            },
+        });
+
+        render(
+            <CheckoutProvider checkoutService={checkoutService}>
+                <LocaleContext.Provider value={localeContext}>
+                    <ExtensionProvider checkoutService={checkoutService} errorLogger={errorLogger} >
+                        <MultiShippingFormV2 {...defaultProps} />
+                    </ExtensionProvider>
+                </LocaleContext.Provider>
+            </CheckoutProvider>,
+        );
+
+        expect(screen.getByTestId('split-item-tooltip')).toBeInTheDocument();
+
+        await userEvent.click(screen.getByTestId('reallocate-items-button'));
+
+        const reAllocateItemsModal = screen.getByRole('dialog');
+
+        expect(reAllocateItemsModal).toBeInTheDocument();
+        expect(within(reAllocateItemsModal).getAllByTestId('split-item-tooltip')).toHaveLength(2);
     });
 });

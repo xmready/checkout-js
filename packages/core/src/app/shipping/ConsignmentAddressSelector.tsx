@@ -6,10 +6,11 @@ import { useCheckout } from "@bigcommerce/checkout/payment-integration-api";
 
 import { AddressFormModal, AddressFormValues, AddressSelect, AddressType, isValidAddress, mapAddressFromFormValues } from "../address";
 import { ErrorModal } from "../common/error";
-import { EMPTY_ARRAY, isFloatingLabelEnabled } from "../common/utility";
+import { EMPTY_ARRAY, isExperimentEnabled, isFloatingLabelEnabled } from "../common/utility";
 
 import { AssignItemFailedError, AssignItemInvalidAddressError } from "./errors";
 import { MultiShippingConsignmentData } from "./MultishippingV2Type";
+import { setRecommendedOrMissingShippingOption } from './utils';
 
 interface ConsignmentAddressSelectorProps {
     consignment?: MultiShippingConsignmentData;
@@ -35,9 +36,19 @@ const ConsignmentAddressSelector = ({
 
     const {
         checkoutState: {
-            data: { getShippingCountries, getCustomer, getConfig, getShippingAddressFields: getFields },
+            data: {
+                getShippingCountries,
+                getCustomer,
+                getConfig,
+                getConsignments: getPreviousConsignments,
+                getShippingAddressFields: getFields,
+            },
         },
-        checkoutService: { assignItemsToAddress: assignItem, createCustomerAddress },
+        checkoutService: {
+            updateConsignment,
+            createCustomerAddress,
+            selectConsignmentShippingOption,
+        },
     } = useCheckout();
 
     const countries = getShippingCountries() || EMPTY_ARRAY;
@@ -49,7 +60,7 @@ const ConsignmentAddressSelector = ({
     }
 
     const isFloatingLabelEnabledFlag = isFloatingLabelEnabled(config.checkoutSettings);
-    // TODO: add filter for addresses 
+    // TODO: add filter for addresses
     const addresses = customer.addresses || EMPTY_ARRAY;
     const {
         checkoutSettings: {
@@ -57,8 +68,14 @@ const ConsignmentAddressSelector = ({
         },
     } = config;
 
+    const validateAddressFields =
+        isExperimentEnabled(
+            config.checkoutSettings,
+            'CHECKOUT-7560.address_fields_max_length_validation',
+        );
+
     const handleSelectAddress = async (address: Address) => {
-        if (!isValidAddress(address, getFields(address.countryCode))) {
+        if (!isValidAddress(address, getFields(address.countryCode), validateAddressFields)) {
             return onUnhandledError(new AssignItemInvalidAddressError());
         }
 
@@ -73,11 +90,24 @@ const ConsignmentAddressSelector = ({
         }
 
         try {
-            await assignItem({
+            const {
+                data: { getConsignments },
+            } = await updateConsignment({
+                id: consignment.id,
                 address,
+                shippingAddress: address,
                 lineItems: consignment.lineItems.map(({ id, quantity }) => ({ itemId: id, quantity })),
             });
 
+            const currentConsignments = getConsignments();
+
+            if (currentConsignments && currentConsignments.length > 0) {
+                await setRecommendedOrMissingShippingOption(
+                    getPreviousConsignments() ?? [],
+                    currentConsignments,
+                    selectConsignmentShippingOption,
+                );
+            }
         } catch (error) {
             if (error instanceof Error) {
                 onUnhandledError(new AssignItemFailedError(error));
@@ -95,10 +125,6 @@ const ConsignmentAddressSelector = ({
 
     const handleSaveAddress = async (addressFormValues: AddressFormValues) => {
         const address = mapAddressFromFormValues(addressFormValues);
-
-        if (!isValidAddress(address, getFields(address.countryCode))) {
-            return onUnhandledError(new AssignItemInvalidAddressError());
-        }
 
         await handleSelectAddress(address);
 
@@ -146,6 +172,7 @@ const ConsignmentAddressSelector = ({
                 addresses={addresses}
                 onSelectAddress={handleSelectAddress}
                 onUseNewAddress={handleUseNewAddress}
+                placeholderText={<TranslatedString id="shipping.choose_shipping_address" />}
                 selectedAddress={selectedAddress}
                 showSingleLineAddress
                 type={AddressType.Shipping}
