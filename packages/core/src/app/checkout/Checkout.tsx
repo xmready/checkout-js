@@ -51,6 +51,7 @@ import CheckoutStepType from './CheckoutStepType';
 import CheckoutSupport from './CheckoutSupport';
 import mapToCheckoutProps from './mapToCheckoutProps';
 import navigateToOrderConfirmation from './navigateToOrderConfirmation';
+import CustomerInfoSummary from '../customerinfos/CustomerInfoSummary';
 
 const Billing = lazy(() =>
     retry(
@@ -102,6 +103,44 @@ const Shipping = lazy(() =>
     ),
 );
 
+const CustomerInfos = lazy(() =>
+    retry(
+        () =>
+            import(
+                /* webpackChunkName: "customerinfo" */
+                '../customerinfos/CustomerInfos'
+            ),
+    ),
+);
+
+export interface CustomerInfoItems {
+    group_ids: [];
+    label: string;
+    metafieldKey: string;
+    options: [];
+    type: string;
+    placeholder: string;
+}
+
+export interface CustomerInfoData {
+    valid: boolean;
+    entityID: Number;
+}
+
+export interface CustomerInfoValues {
+    label: string;
+    value: string;
+}
+
+export interface CustomerInfoMetaFields {
+    budgeting: CustomerInfoData;
+    program_id: CustomerInfoData;
+    bottler: CustomerInfoData;
+    po_number: CustomerInfoData;
+    assigned_program_id: CustomerInfoData;
+    team_name: CustomerInfoData;
+}
+
 export interface CheckoutProps {
     checkoutId: string;
     containerId: string;
@@ -124,6 +163,17 @@ export interface CheckoutState {
     hasSelectedShippingOptions: boolean;
     isSubscribed: boolean;
     buttonConfigs: PaymentMethod[];
+    infoData: CustomerInfoItems[];
+    cusGrpParse: any;
+    infoUpdated: CustomerInfoMetaFields;
+    budgeting: CustomerInfoValues;
+    program_id: CustomerInfoValues;
+    assigned_program_id: string;
+    bottler: CustomerInfoValues;
+    po_number: string;
+    assigned_field_display: boolean;
+    team_name: CustomerInfoValues;
+    customerGroupId: Number;
 }
 
 export interface WithCheckoutProps {
@@ -166,6 +216,48 @@ class Checkout extends Component<
         hasSelectedShippingOptions: false,
         isSubscribed: false,
         buttonConfigs: [],
+        infoData: [],
+        cusGrpParse: [],
+        infoUpdated: {
+            budgeting: {
+                valid: false, entityID: 0
+            },
+            program_id: {
+                valid: false, entityID: 0
+            },
+            bottler: {
+                valid: false, entityID: 0
+            },
+            po_number: {
+                valid: false, entityID: 0
+            },
+            assigned_program_id: {
+                valid: false, entityID: 0
+            },
+            team_name: {
+                valid: false, entityID: 0
+            }
+        },
+        budgeting: {
+            "label": "",
+            "value": ""
+        },
+        program_id: {
+            "label": "",
+            "value": ""
+        },
+        bottler: {
+            "label": "",
+            "value": ""
+        }, 
+        team_name: {
+            "label": "",
+            "value": ""
+        },
+        assigned_program_id: "",
+        po_number: "",
+        assigned_field_display: false,
+        customerGroupId: 0,
     };
 
     private embeddedMessenger?: EmbeddedCheckoutMessenger;
@@ -249,6 +341,7 @@ class Checkout extends Component<
 
             const consignments = data.getConsignments();
             const cart = data.getCart();
+            const customer = data.getCustomer();
 
             const hasMultiShippingEnabled =
                 data.getConfig()?.checkoutSettings.hasMultiShippingEnabled;
@@ -275,6 +368,25 @@ class Checkout extends Component<
             }
 
             window.addEventListener('beforeunload', this.handleBeforeExit);
+
+            let infoDataStr:any = localStorage.getItem("inf");
+            let infoParse:[] = JSON.parse(infoDataStr);
+            let cusGrpStr:any = localStorage.getItem("cusGrp");
+            let cusGrpParse:Number[] = JSON.parse(cusGrpStr);
+            this.setState({infoData: infoParse, cusGrpParse: cusGrpParse});
+
+            if(customer && customer.customerGroup && customer.customerGroup.id && cusGrpParse.indexOf(customer.customerGroup.id) > -1) {
+                this.setState({customerGroupId: customer.customerGroup.id})
+                if(document.getElementById("dealerScript")) {
+                    let scriptElem:any = document.getElementById("dealerScript");
+                    const bearerToken:any = scriptElem.attributes.store_api.nodeValue;
+                    if(bearerToken) {
+                        if(cart && cart.id) {
+                            await this.handleCustomerInfoUpdate(cart.id, bearerToken);
+                        }
+                    }
+                }
+            }
 
         } catch (error) {
             if (error instanceof Error) {
@@ -365,6 +477,9 @@ class Checkout extends Component<
             case CheckoutStepType.Customer:
                 return this.renderCustomerStep(step);
 
+            case CheckoutStepType.CustomerInfo:
+                return this.renderCustomerInfoStep(step);
+
             case CheckoutStepType.Shipping:
                 return this.renderShippingStep(step);
 
@@ -406,12 +521,12 @@ class Checkout extends Component<
                     isEmbedded={isEmbedded()}
                     isSubscribed={isSubscribed}
                     isWalletButtonsOnTop = {isShowingWalletButtonsOnTop }
-                    onAccountCreated={this.navigateToNextIncompleteStep}
+                    onAccountCreated={this.handleAfterSignInAfter}
                     onChangeViewType={this.setCustomerViewType}
                     onContinueAsGuest={this.navigateToNextIncompleteStep}
                     onContinueAsGuestError={this.handleError}
                     onReady={this.handleReady}
-                    onSignIn={this.navigateToNextIncompleteStep}
+                    onSignIn={this.handleAfterSignInAfter}
                     onSignInError={this.handleError}
                     onSubscribeToNewsletter={this.handleNewsletterSubscription}
                     onUnhandledError={this.handleUnhandledError}
@@ -419,6 +534,48 @@ class Checkout extends Component<
                     step={step}
                     viewType={customerViewType}
                 />
+            </CheckoutStep>
+        );
+    }
+
+    private renderCustomerInfoStep(step: CheckoutStepStatus): ReactNode {
+        // const { isGuestEnabled, isShowingWalletButtonsOnTop } = this.props;
+        const { infoData, infoUpdated, bottler, program_id, budgeting, po_number, assigned_program_id, assigned_field_display, team_name } = this.state;
+
+        return (
+            <CheckoutStep
+                {...step}
+                heading={<TranslatedString id="customerInfo.customerInfo_heading" />}
+                key={step.type}
+                onEdit={this.handleEditStep}
+                onExpanded={this.handleExpanded}
+                suggestion={<CheckoutSuggestion />}
+                summary={
+                    <CustomerInfoSummary
+                        po_number={po_number}
+                        bottler={bottler}
+                        program_id={program_id}
+                        budgeting={budgeting}
+                        assigned_program_id={assigned_program_id}
+                        team_name={team_name}
+                    />
+                }
+            >
+                <LazyContainer  loadingSkeleton={<AddressFormSkeleton />}>
+                    <CustomerInfos 
+                        infoData={infoData}
+                        infoUpdated={infoUpdated}
+                        bottler={bottler}
+                        program_id={program_id}
+                        budgeting={budgeting}
+                        handleInfoChange={this.handleInfoChange}
+                        handleCustomerInfoUpdate={this.handleCustomerInfoUpdate}
+                        po_number={po_number}
+                        assigned_program_id={assigned_program_id}
+                        assigned_field_display={assigned_field_display}
+                        team_name={team_name}
+                    />
+                </LazyContainer>
             </CheckoutStep>
         );
     }
@@ -615,6 +772,37 @@ class Checkout extends Component<
         return embeddedSupport.isSupported(...methodIds);
     };
 
+    private handleAfterSignInAfter: () => void = async () => {
+        const {loadCheckout, checkoutId, extensionService} = this.props;
+        const { cusGrpParse } = this.state;
+      
+        try {
+            const [{ data }] = await Promise.all([loadCheckout(checkoutId, {
+                params: {
+                    include: [
+                        'cart.lineItems.physicalItems.categoryNames',
+                        'cart.lineItems.digitalItems.categoryNames',
+                    ] as any, // FIXME: Currently the enum is not exported so it can't be used here.
+                },
+            }), extensionService.loadExtensions()]);
+
+            const customer = data.getCustomer();
+
+            if(customer && customer.customerGroup && customer.customerGroup.id) {
+                this.setState({customerGroupId: customer.customerGroup.id})
+            }
+            
+            if(customer && customer.customerGroup && customer.customerGroup.id && cusGrpParse && cusGrpParse.indexOf(customer.customerGroup.id) > -1) {
+                this.navigateToStep(CheckoutStepType.CustomerInfo);
+            } else {
+                this.navigateToStep(CheckoutStepType.Shipping);
+            }
+        } catch (error) {
+            if (error instanceof Error) {
+                this.handleUnhandledError(error);
+            }
+        }
+    }
     private handleCartChangedError: (error: CartChangedError) => void = () => {
         this.navigateToStep(CheckoutStepType.Shipping);
     };
@@ -676,6 +864,160 @@ class Checkout extends Component<
         if (this.embeddedMessenger) {
             this.embeddedMessenger.postError(error);
         }
+    };
+
+    private handleInfoChange: (key: string, value:any) => void = (key, value) => {
+        const name = key;
+        if(name == "budgeting" && value && value.value == '100% BODYARMOR') {
+            this.setState({ ...this.state, [name]: value });
+            this.setState({ po_number : "NA" });
+        } else if(name == "budgeting" && value && value.value != '100% BODYARMOR') {
+            this.setState({ ...this.state, [name]: value });
+            this.setState({ po_number : "" });
+        } else if(name == "program_id" && value && value.value == 'CUSTOMER') {
+            this.setState({ ...this.state, [name]: value });
+            this.setState({ assigned_field_display : true });
+        } else if(name == "program_id" && value && value.value != 'CUSTOMER') {
+            this.setState({ ...this.state, [name]: value });
+            this.setState({ assigned_field_display : false, assigned_program_id: "" });
+        } else {
+            this.setState({ ...this.state, [name]: value });
+        }
+    };
+
+    private handleCustomerInfoUpdate: (cartId: string,  bearerToken:any) => void = async (cartId, bearerToken) => {
+        let _that = this;
+        const {customerGroupId} = this.state;
+
+        let getOptionsQuery = `query getCartMetafields {
+                site {
+                    cart(entityId: "${cartId}") {
+                        metafields(namespace: \"bc_storefront\") {
+                            edges {
+                                node {
+                                    entityId
+                                    id
+                                    key
+                                    value
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        `;          
+        await fetch('/graphql', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${bearerToken}`
+            },
+            body: JSON.stringify({
+                query: getOptionsQuery
+            })
+        }).then(res => res.json()).then(res => {
+            if(res && res.data) {
+                let metaEdges:any = res.data.site.cart.metafields.edges;
+                let metaFieldInfo: any = {
+                    budgeting: {
+                        valid: false, entityID: 0
+                    },
+                    program_id: {
+                        valid: false, entityID: 0
+                    },
+                    bottler: {
+                        valid: false, entityID: 0
+                    },
+                    assigned_program_id: {
+                        valid: false, entityID: 0
+                    },
+                    po_number: {
+                        valid: false, entityID: 0
+                    },
+                    team_name: {
+                        valid: false, entityID: 0
+                    }    
+                };
+                
+                if(metaEdges && metaEdges.length) {
+                    metaEdges.map((metafield: any, index: Number) => {
+                        if(customerGroupId == 11) {
+                            metaFieldInfo = {
+                                budgeting: {
+                                    valid: true, entityID: 0
+                                },
+                                program_id: {
+                                    valid: true, entityID: 0
+                                },
+                                bottler: {
+                                    valid: true, entityID: 0
+                                },
+                                assigned_program_id: {
+                                    valid: true, entityID: 0
+                                },
+                                po_number: {
+                                    valid: true, entityID: 0
+                                },
+                                team_name: {
+                                    valid: false, entityID: 0
+                                }    
+                            };
+
+                            if(metafield.node.key == "team_name") {
+                                _that.setState({team_name: {"label": metafield.node.value, value: metafield.node.value}})
+                                metaFieldInfo.team_name.valid = true;
+                                metaFieldInfo.team_name.entityID = metafield.node.entityId;
+                            }
+                        } else {
+                            if (metafield.node.key == "budgeting") {
+                                    _that.setState({budgeting: {"label": metafield.node.value, value: metafield.node.value}})
+                                    metaFieldInfo.budgeting.valid = true;
+                                    metaFieldInfo.budgeting.entityID = metafield.node.entityId;
+                            } else if (metafield.node.key == "program_id") {
+                                    _that.setState({program_id: {"label": metafield.node.value, value: metafield.node.value}})
+                                    metaFieldInfo.program_id.valid = true;
+                                    metaFieldInfo.program_id.entityID = metafield.node.entityId;
+                                    if(metafield.node.value == "CUSTOMER") {
+                                        _that.setState({assigned_field_display: true});
+                                        metaFieldInfo.assigned_program_id.valid = false;
+                                    } else {
+                                        _that.setState({assigned_field_display: false, assigned_program_id: ""});
+                                        metaFieldInfo.assigned_program_id.valid = true;
+                                    }
+                            } else if (metafield.node.key == "bottler") {
+                                    _that.setState({bottler: {"label": metafield.node.value, value: metafield.node.value}})
+                                    metaFieldInfo.bottler.valid = true;
+                                    metaFieldInfo.bottler.entityID = metafield.node.entityId;
+                            } else if (metafield.node.key == "assigned_program_id") {
+                                    _that.setState({assigned_program_id: metafield.node.value})
+                                    metaFieldInfo.assigned_program_id.valid = true;
+                                    metaFieldInfo.assigned_program_id.entityID = metafield.node.entityId;
+                            } else if (metafield.node.key == "po_number") {
+                                    _that.setState({po_number: metafield.node.value})
+                                    metaFieldInfo.po_number.valid = true;
+                                    metaFieldInfo.po_number.entityID = metafield.node.entityId;
+                            }
+
+                            metaFieldInfo.team_name.valid = true;
+                            metaFieldInfo.team_name.entityID = 0;
+                        }
+
+                        if(index == (metaEdges.length - 1)) {
+                            _that.setState({infoUpdated: metaFieldInfo});
+                        }
+                    }); 
+                }
+
+                if(metaFieldInfo.budgeting.valid == true && metaFieldInfo.program_id.valid == true && metaFieldInfo.bottler.valid == true && metaFieldInfo.po_number.valid == true && metaFieldInfo.po_number.valid == true && metaFieldInfo.team_name.valid == true) {
+                    localStorage.setItem("custInf", "1");
+                    this.navigateToStep(CheckoutStepType.Shipping);
+                } else {
+                    localStorage.removeItem("custInf");
+                    this.navigateToStep(CheckoutStepType.CustomerInfo);
+                }
+            }
+        });
     };
 
     private handleEditStep: (type: CheckoutStepType) => void = (type) => {
@@ -759,6 +1101,10 @@ class Checkout extends Component<
         const { analyticsTracker } = this.props;
 
         analyticsTracker.exitCheckout();
+
+        localStorage.removeItem("custInf");
+        localStorage.removeItem("inf");
+        localStorage.removeItem("cusGrp");
     }
 
     private handleWalletButtonClick: (methodName: string) => void = (methodName) => {
